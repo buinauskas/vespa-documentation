@@ -1,8 +1,6 @@
 ---
-# Copyright Vespa.ai. Licensed under the terms of the Apache 2.0 license. See LICENSE in the project root.
+# Copyright Vespa.ai. All rights reserved.
 title: "Retrieval-augmented generation (RAG) in Vespa"
-redirect_from:
-- /documentation/llms-rag.html
 ---
 
 Please refer to [Large Language Models in Vespa](llms-in-vespa.html) for an
@@ -29,29 +27,29 @@ which demonstrates using either an external LLM service or a local LLM.
 
 In `services.xml`, specify your LLM connection and the `RAGSearcher`:
 
-```
+```xml
 <services version="1.0">
-  <container id="default" version="1.0">
+    <container id="default" version="1.0">
 
-    ...
+        ...
 
-    <component id="openai" class="ai.vespa.llm.clients.OpenAI">
-      <!-- Configure as required -->
-    </component>
+        <component id="openai" class="ai.vespa.llm.clients.OpenAI">
+            <!-- Configure as required -->
+        </component>
 
-    <search>
-      <chain id="rag" inherits="vespa">
-        <searcher id="ai.vespa.search.llm.RAGSearcher">
-          <config name="ai.vespa.search.llm.llm-searcher">
-            <providerId>openai</providerId>
-          </config>
-        </searcher>
-      </chain>
-    </search>
+        <search>
+            <chain id="rag" inherits="vespa">
+                <searcher id="ai.vespa.search.llm.RAGSearcher">
+                    <config name="ai.vespa.search.llm.llm-searcher">
+                        <providerId>openai</providerId>
+                    </config>
+                </searcher>
+            </chain>
+        </search>
 
-    ...
+        ...
 
-  </container>
+    </container>
 </services>
 ```
 

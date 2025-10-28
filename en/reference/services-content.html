@@ -1,8 +1,6 @@
 ---
-# Copyright Vespa.ai. Licensed under the terms of the Apache 2.0 license. See LICENSE in the project root.
+# Copyright Vespa.ai. All rights reserved.
 title: "services.xml - 'content'"
-redirect_from:
-- /documentation/reference/services-content.html
 ---
 
 <pre class="pre-config">
@@ -12,7 +10,8 @@ redirect_from:
         <a href="#document-processing">document-processing</a>
     <a href="#min-redundancy">min-redundancy</a>
     <a href="#redundancy">redundancy</a>
-    <a href="#nodes">nodes</a>
+    <a href="#coverage-policy">coverage-policy</a>
+    <a href="services.html#nodes">nodes</a>
         <a href="#node">node</a>
     <a href="#group">group</a>
         <a href="#distribution">distribution</a>
@@ -87,15 +86,12 @@ redirect_from:
             <a href="#minimum">minimum</a>
             <a href="#min-wait-after-coverage-factor">min-wait-after-coverage-factor</a>
             <a href="#max-wait-after-coverage-factor">max-wait-after-coverage-factor</a>
-    <a href="#dispatch">dispatch <strong>DEPRECATED</strong></a>
-        <a href="#dispatch">num-dispatch-groups <strong>DEPRECATED</strong></a>
-        <a href="#dispatch">group <strong>DEPRECATED</strong></a>
-            <a href="#dispatch">node<strong>DEPRECATED</strong></a>
     <a href="#tuning">tuning</a>
         <a href="#bucket-splitting">bucket-splitting</a>
         <a href="#min-node-ratio-per-group">min-node-ratio-per-group</a>
         <a href="#distribution_type">distribution</a>
         <a href="#maintenance">maintenance</a>
+        <a href="#max-document-size">max-document-size</a>
         <a href="#merges">merges</a>
         <a href="#persistence-threads">persistence-threads</a>
         <a href="#resource-limits">resource-limits</a>
@@ -103,9 +99,10 @@ redirect_from:
             <a href="#max-concurrent">max-concurrent</a>
         <a href="#dispatch-tuning">dispatch</a>
             <a href="#max-hits-per-partition">max-hits-per-partition</a>
-            <a href="#top-k-probability">top-k-probability</a>
             <a href="#dispatch-policy">dispatch-policy</a>
+            <a href="#prioritize-availability">prioritize-availability</a>
             <a href="#min-active-docs-coverage">min-active-docs-coverage</a>
+            <a href="#top-k-probability">top-k-probability</a>
         <a href="#cluster-controller">cluster-controller</a>
             <a href="#init-progress-time">init-progress-time</a>
             <a href="#transition-time">transition-time</a>
@@ -143,8 +140,8 @@ Contained in <a href="services.html">services</a>.
     <p>
       Name of the content cluster.
       If none is supplied, the cluster name will be <code>content</code>.
-      Cluster names must be unique within application,
-      if multiple clusters are configured, name must be set for all but one at minimum.
+      Cluster names must be unique within the application,
+      if multiple clusters are configured, the name must be set for all but one at minimum.
     </p>
     {% include note.html content="
     Renaming a cluster is the same as dropping the current cluster and adding a new one.
@@ -162,11 +159,11 @@ Contained in <a href="services.html">services</a>.
   <li><a href="#documents">documents</a> (required)</li>
   <li><a href="#min-redundancy">min-redundancy</a></li>
   <li><a href="#redundancy">redundancy</a></li>
-  <li><a href="#nodes">nodes</a></li>
+  <li><a href="#coverage-policy">coverage-policy</a></li>
+  <li><a href="services.html#nodes">nodes</a></li>
   <li><a href="#group">group</a></li>
   <li><a href="#engine">engine</a></li>
   <li><a href="#search">search</a></li>
-  <li><a href="#dispatch">dispatch</a></li>
   <li><a href="#tuning">tuning</a></li>
 </ul>
 
@@ -223,7 +220,9 @@ Also have some backend specific configuration for whether documents should be se
   <td>integer</td>
   <td>3600</td>
   <td>
-    <p id="documents.garbage-collection-interval">Time (in seconds) between garbage collection cycles.</p>
+    <p id="documents.garbage-collection-interval">Time (in seconds) between garbage collection cycles.
+      Note that the deletion of documents is spread over this interval, so more resources will be
+      used for deleting a set of documents with a small interval than with a larger interval.</p>
   </td></tr>
 </tbody>
 </table>
@@ -258,9 +257,7 @@ Also have some backend specific configuration for whether documents should be se
       <td>
         <p id="document.mode">
           The mode of storing and indexing.
-          In this documentation, <em>index</em> is assumed unless explicitly mentioned
-          <em><a href="../streaming-search.html">streaming</a></em> or <em>store-only</em>.
-          Refer to <em>streaming search</em> for <em>store-only</em>, as documents are stored
+          Refer to <a href="../streaming-search.html">streaming search</a> for <em>store-only</em>, as documents are stored
           the same way for both cases.
         </p><p>
           Changing mode requires an <em>indexing-mode-change</em>
@@ -352,6 +349,7 @@ referred to by the content cluster:
 </p>
 <pre>{% highlight xml %}
 <container id="my-indexing-cluster" version="1.0">
+    <document-api/>
     <document-processing/>
 </container>
 <content id="music" version="1.0">
@@ -369,6 +367,7 @@ referred to by the content cluster:
 </p>
 <pre>{% highlight xml %}
 <container id="my-indexing-cluster" version="1.0">
+    <document-api/>
     <document-processing>
         <chain id="my-document-processors"
                inherits="indexing">
@@ -388,12 +387,10 @@ referred to by the content cluster:
     </documents>
 </content>
 {% endhighlight %}</pre>
-<p>
-Also note the <a href="services-container.html#document-api">document-api</a> configuration,
-applications can set up this API on the same nodes as <em>document-processing</em> -
-find details in <a href="../indexing.html">indexing</a>.
-</p>
-
+{% include important.html content='
+Note the <a href="services-container.html#document-api">document-api</a> configuration.
+Set up this API on the same nodes as <code>document-processing</code> -
+find details in <a href="../indexing.html">indexing</a>.' %}
 
 
 <h2 id="min-redundancy">min-redundancy</h2>
@@ -404,115 +401,122 @@ This can be set instead of (or in addition to) redundancy to ensure that a
 minimum number of copies are always maintained regardless of other configuration.
 </p>
 <p>
+Example: If <em>min-redundancy</em> is 2 and there is 1 content group, there will be 2
+data copies in the group (2 copies for the cluster). If the number of groups is
+changed to 2 there will be 1 data copy in each group (still 2 copies for the cluster).
+</p>
+<p>
   Read more about the actual number of replicas when using <a href="#group">groups</a>
   in <a href="/en/elasticity.html#changing-topology">topology change</a>.
 </p>
+<p><code>min-redundancy</code> can be changed without node restart - replicas will be added or removed automatically.</p>
 
 
 
 <h2 id="redundancy">redundancy</h2>
-
-<p>Contained in <a href="#content">content</a>.
-The total data copies the cluster will maintain to avoid data loss (or, the data copies <i>per group</i> in
-<a href="https://cloud.vespa.ai/en/reference/services.html#redundancy">the Vespa Cloud documentation</a>).
-Example: with a redundancy of 2, the system tolerates 1 node failure before data becomes unavailable
-(until the system has managed to create new replicas on other online nodes).
-</p>
-
-<p>Redundancy can be changed without node restart - replicas will be added or removed automatically.
-</p>
-
-
-
-<h2 id="nodes">nodes</h2>
+<p>Contained in <a href="#content">content</a>.</p>
+{% include note.html content='
+Use <a href="#min-redundancy">min-redundancy</a> instead of <code>redundancy</code>.' %}
+<p>Vespa Cloud: The number of data copies <em>per group</em>.</p>
+<p>Self-managed: The total data copies the cluster will maintain to avoid data loss.</p>
 <p>
-Contained in <a href="#content">content</a>.
-Defines the set of content nodes in the cluster - parent for node-elements.
+  Example: with a redundancy of 2, the system tolerates 1 node failure before data becomes unavailable
+  (until the system has managed to create new replicas on other online nodes).
 </p>
+<p>Redundancy can be changed without node restart - replicas will be added or removed automatically.</p>
 
+
+
+<h2 id="coverage-policy">coverage-policy</h2>
+<p>Contained in <a href="#content">content</a>.</p>
+<p>
+  Specifies the coverage policy for the content cluster. Valid values are <code>group</code> or <code>node</code>.
+  The default value is <code>group</code>.</p>
+<p>
+  If the policy is <code>group</code> coverage is maintained per group, meaning that when doing maintenance,
+  upgrades etc. one group is allowed to be down at a time. If there is only one group in the cluster,
+  coverage will be the same as policy <code>node</code>.</p>
+<p>
+  If the policy is <code>node</code> coverage is maintained on a node level, meaning that when doing
+  maintenance, upgrades etc. coverage will be maintained on a node level,  so in practice 1 node in the whole
+  cluster is allowed to be down at a time.
+</p>
+<p>
+  When having several groups the common reason for changing policy away from the default <code>group</code> policy
+  is when the load added to the remaining groups will increase too much when a whole group is allowed to
+  go down. In that case it will be better to use the <code>node</code> policy, as taking one node at a time
+  will give just a minor increase in load.
+</p>
 
 
 <h2 id="node">node</h2>
-<p>
-Contained in <a href="#nodes">nodes</a> or <a href="#group">group</a>.
-Configures a content node to the cluster.
+
+<p>Contained in <a href="#nodes">nodes</a> or <a href="#group">group</a>.
+Configures a content node to the cluster, see <a href="services.html#node">node</a>
+in the general services.xml documentation.</p>
+
+<p>Additional node attributes for content nodes:</p>
+
 <table class="table">
 <thead>
 <tr><th>Attribute</th><th>Required</th><th>Value</th><th>Default</th><th>Description</th></tr>
-</thead><tbody>
-<tr><th style="white-space: nowrap">distribution-key</th>
+</thead>
+<tbody>
+<tr>
+  <th style="white-space: nowrap">distribution-key</th>
   <td>required</td>
   <td>integer</td>
   <td></td>
   <td>
     <p id="node.distribution-key">
-    Sets the distribution key of a node. It is not recommended changing this for a given node.
-    It is recommended (but not required) that the set of distribution keys
-    in the cluster are contiguous and starting at 0.
-    Example: If the biggest distribution key is 499, then the distribution algorithm
-    needs to calculate 500 random numbers to calculate the correct target.
-    It is hence recommended to not leave too many gaps in the distribution key range.
-    </p><p>
-    Distribution keys are used to identify nodes and groups for the
+    The unique data distribution id of this node. This <b>must</b> remain unchanged for the host's lifetime.
+    Distribution keys of a fresh system should be contiguous and start from zero.</p>
+
+    <p>Distribution keys are used to identify nodes and groups for the
     <a href="../content/idealstate.html">distribution algorithm</a>.
     If a node changes distribution key, the distribution algorithm regards it as a new node,
-    so buckets are redistributed.
-    When merging clusters, one might need to change distribution keys -
-    <a href="/en/operations-selfhosted/admin-procedures.html#add-or-remove-a-content-node">details</a>.
-    </p><p>
-    Content nodes need unique node distribution keys across the whole cluster,
-    as the key is also used as a node identifier where group information is not specified.
-    </p>
-  </td></tr>
-<tr><th>capacity</th>
+    so buckets are redistributed.</p>
+  </td>
+</tr>
+<tr>
+  <th>capacity</th>
   <td>optional</td>
   <td>double</td>
   <td>1</td>
   <td>
     <p id="node.capacity">
-      Capacity of this node, relative to other nodes.
+      {% include deprecated.html content="Capacity of this node, relative to other nodes.
       A node with capacity 2 will get double the data and feed requests of a node with capacity 1.
-      This feature is expert mode only. Don't use if you don't know what you are doing.
+      This feature is deprecated and expert mode only. Don't use in production, Vespa assumes
+      homogenous cluster capacity."%}
     </p>
-  </td></tr>
-<tr><th>baseport</th>  <!-- ToDo: next 3 attributes are undocumented, still valid? -->
+  </td>
+</tr>
+<tr>
+  <th>baseport</th>
   <td>optional</td>
   <td>integer</td>
   <td></td>
-  <td><p id="node.baseport">baseport</p></td>
-  </tr>
-<tr><th>hostalias</th>
-  <td>optional</td>
-  <td>string</td>
-  <td></td>
-  <td><p id="node.hostalias">hostalias</p></td>
-  </tr>
-<tr><th>preload</th>
-  <td>optional</td>
-  <td>string</td>
-  <td></td>
-  <td><p id="node.preload">preload</p></td>
-  </tr>
+  <td>
+      <p id="node.baseport">baseport
+      The first port in the port range allocated by this node.
+      </p>
+  </td>
+</tr>
 </tbody>
 </table>
 
 
 
 <h2 id="group">group</h2>
-<p>
-Contained in <a href="#content">content</a> or
+
+<p>Contained in <a href="#content">content</a> or
 <a href="#group">group</a> - groups can be nested.
 Defines the <a href="../elasticity.html#grouped-distribution">hierarchical structure</a> of the cluster.
-Can not be used in conjunction with the <a href="#nodes">nodes</a> element.
+Can not be used in conjunction with the <a href="services.html#nodes">nodes</a> element.
 Groups can contain other groups or nodes, but not both.
-</p><p>
-When using groups in <a href="https://vespa.ai/">Open Source Vespa</a>,
-<a href="#searchable-copies">searchable-copies</a> and
-<a href="#redundancy">redundancy</a> is the <em>total</em> replica number,
-across all leaf groups in the cluster.
-For groups in Vespa Cloud,
-see <a href="https://cloud.vespa.ai/en/reference/services.html#nodes">services in Vespa Cloud</a>.
-</p>
+There can only be a single level of leaf groups under the top group.</p>
+
 <table class="table">
 <thead>
 <tr><th>Attribute</th><th>Required</th><th>Value</th><th>Default</th><th>Description</th></tr>
@@ -630,7 +634,8 @@ in memory for fast access.
 Note that this is only useful if <code>searchable-copies</code> is less than <code>redundancy</code>.
 Read more in <a href="../proton.html">proton</a>.
 </p><p>
-<code>searchable-copies</code> can be changed without node restart.
+  <code>searchable-copies</code> can be changed without node restart. Note that when reducing
+  <code>searchable-copies</code> resource usage will not be reduced until content nodes are restarted.
 </p>
 
 
@@ -791,7 +796,7 @@ Optional sub-elements:
             </li>
             <li id="flushstrategy-native-total-diskbloatfactor"><code>diskbloatfactor</code>:
             Trigger flush if the total disk gain (in bytes) for <em>all</em> components is larger
-            than the factor times current total disk usage, default 0.2
+            than the factor times current total disk usage, default 0.25
             </li>
         </ul>
         </li><li id="flushstrategy-native-component"><code>component</code>
@@ -802,7 +807,7 @@ Optional sub-elements:
             </li>
             <li id="flushstrategy-native-component-diskbloatfactor"><code>diskbloatfactor</code>:
             Trigger flush if the disk gain (in bytes) by <em>a single</em> component is larger than
-            the given factor times the current disk usage by that component, default 0.2
+            the given factor times the current disk usage by that component, default 0.25
             </li>
             <li id="flushstrategy-native-component-maxage"><code>maxage</code>:
             The maximum age (in seconds) of unflushed content for a single component
@@ -910,12 +915,13 @@ Tune <a href="../proton.html">proton</a> settings for feed operations. Optional 
 <ul>
   <li id="feeding-concurrency"><code>concurrency</code>:
     A number between 0.0 and 1.0 that specifies the concurrency when handling feed operations, default 0.5.
-    When set to 1.0, all cores on the cpu can be used for feeding.
+    When set to 1.0, all cores on the cpu can be used for feeding. Changing this value requires restart of
+    node to take effect.
   </li>
   <li id="feeding-niceness"><code>niceness</code>:
     A number between 0.0 and 1.0 that specifies the niceness of the feeding threads, default 0.0 => not any nicer than anyone else.
     Increasing this number will reduce priority of feeding compared to search. The real world effect is hard to predict as the magic
-    exists in the OS level scheduler.
+    exists in the OS level scheduler. Changing this value requires restart of node to take effect.
   </li>
 </ul>
 <pre>{% highlight xml %}
@@ -946,10 +952,10 @@ Tune various aspect with the handling of disk and memory indexes. Optional sub-e
         <li id="index-warmup-time">
           <p>
             <code>time</code>:
-            Specifies in seconds how long the index shall be warmed up before being switch in for serving.
+            Specifies in seconds how long the index shall be warmed up before being switched in for serving.
             During warmup, it will receive queries and posting lists will be iterated, but results ignored
             as they are duplicates of the live index. This will pull in the most important ones in the cache.
-            However, as warming up an index will occupy more memory do not turn it on unless you suspect you need it.
+            However, as warming up an index will occupy more memory, do not turn it on unless you suspect you need it.
             And always benchmark to see if it is worth it.
           </p>
           <p>
@@ -992,7 +998,7 @@ Tune various aspect of the db of removed documents. Optional sub-elements:
         <li id="removed-db-prune-age"><code>age</code>:
         Specifies how long (in seconds) we must remember removed documents before we can prune them away.
         Default is 2 weeks.
-        This sets the upper limit on long a node can be down and still be accepted back in the system,
+        This sets the upper limit on how long a node can be down and still be accepted back in the system,
         without having the index wiped.
         There is no point in having this any higher than the age of the documents.
         If corpus is re-fed every day, there is no point in having this longer than 24 hours.
@@ -1129,7 +1135,34 @@ Refer to <a href="../proton.html#proton-maintenance-jobs">Proton maintenance job
   However, if using NAS (Network Attached Storage) like EBS on AWS one can see significant
   feed performance impact. For one particular case, turning off sync-transactionlog for EBS gave a 60x improvement.
 </p>
-
+<p>
+    With sync-transactionlog turned off, the risk of losing data depends on the kernel's
+    <a href="https://www.kernel.org/doc/html/latest/admin-guide/sysctl/vm.html#dirty-background-bytes">sysctl settings.</a>
+    For example, this is a common default:
+</p>
+<pre>
+# sysctl -a
+...
+vm.dirty_expire_centisecs = 3000
+vm.dirty_ratio = 20
+vm.dirty_writeback_centisecs = 500
+...
+</pre>
+<p>
+    With this configuration, the worse case scenario is to lose 35 seconds worth of transactionlog, but no more than 1/20
+    of the free memory. Because kernel flusher threads wake up every 5s (dirty_writeback_centisecs) and write data
+    older than 30s (dirty_expire_centisecs) from memory to disk. But if un-synced data exceeds 1/20 of the free memory,
+    the Vespa process will sync it (dirty_ratio).
+</p>
+<p>
+    The above also assumes that all copies of the data are lost at the same time <b>and</b> that kernels on all these nodes
+    flush at the same time: realistic scenario only with one copy.
+</p>
+<p>
+    Adjust these <a href="https://www.kernel.org/doc/html/latest/admin-guide/sysctl/vm.html#dirty-background-bytes">sysctl settings</a>
+    to manage the trade-off between data loss and performance. You'll see more in those kernel docs: for example,
+    thresholds can be expressed in bytes.
+</p>
 
 
 <h2 id="resource-limits-proton">resource-limits (in proton)</h2>
@@ -1145,7 +1178,7 @@ Be aware of the risks of tuning resource limits as seen in the link."%}
 <p>
 The local proton limits are derived from the cluster limits if not specified, using this formula:
 </p>
-<p><!-- depends on mathjax -->
+<p class="equation-container"><!-- depends on mathjax -->
 $${L_{proton}} = {L_{cluster}} + \frac{1-L_{cluster}}{2}$$
 </p>
 <table class="table">
@@ -1207,7 +1240,7 @@ For query timeout also see the request parameter <a href="query-api-reference.ht
 
 
 <h2 id="visibility-delay">visibility-delay</h2>
-<p>Contained in <a href="#search">search</a>. Default 0, max 1 seconds.</p>
+<p>Contained in <a href="#search">search</a>. Default 0, max 1, seconds.</p>
 <p>
 This setting controls the TTL caching for <a href="../parent-child.html">parent-child</a> imported fields.
 See <a href="../performance/feature-tuning.html#parent-child-and-search-performance">feature tuning</a>.
@@ -1264,14 +1297,6 @@ timeout for full coverage even after reaching the minimum.
 </p>
 
 
-
-<h2 id="dispatch">dispatch</h2>
-  {% include deprecated.html content="Since Vespa-7.109.10, \"dispatch\" has no effect.
-  Child elements \"num-dispatch-groups\", \"group\" and \"node\" are hence also deprecated.
-  <a href='../vespa8-release-notes.html#vespa-dispatch-bin-process-is-removed'>Details</a>."%}
-
-
-
 <h2 id="tuning">tuning</h2>
 <p>
 Contained in <a href="#content">content</a>, optional. Optional tuning parameters are:
@@ -1281,6 +1306,7 @@ Contained in <a href="#content">content</a>, optional. Optional tuning parameter
 <a href="#dispatch-tuning">dispatch</a>,
 <a href="#distribution_type">distribution</a>,
 <a href="#maintenance">maintenance</a>,
+<a href="#max-document-size">max-document-size</a>,
 <a href="#merges">merges</a>,
 <a href="#persistence-threads">persistence-threads</a> and
 <a href="#visitors">visitors</a>.
@@ -1450,6 +1476,31 @@ Most users should not need to tweak this.
 </table>
 
 
+<h2 id="max-document-size">max-document-size</h2>
+<p>
+Contained in <a href="#tuning">tuning</a>.
+Specifies max document size in the content cluster, measured as the uncompressed size
+of a document operation arriving over the wire by the distributor service. The limit will
+be used for all document types. A document larger than this limit will be rejected by the
+distributor. Note that some document operations that don't contain the entire document, like
+<a href="../document-api-guide.html#document-updates">document updates</a>
+might increase the size of a document above this limit.
+</p>
+<p>
+Valid values are numbers including a unit (e.g. <em>10MiB</em>) and the value must be between 1Mib and 2048 Mib (inclusive).
+Values will be rounded to nearest MiB, so using MiB as a unit is preferrable.
+It is strongly recommended to make sure this is not set too high, 10 MiB is a reasonable setting for most use cases,
+setting it above 100 MiB is not recommended, as allowing large documents might impact operations, e.g. when
+restarting nodes, moving documents between nodes etc. Default value is 128 MiB.
+</p>
+<p>
+  Example:
+</p>
+<pre>{% highlight xml %}
+<tuning>
+    <max-document-size>10MiB</max-document-size>
+</tuning>
+{% endhighlight %}</pre>
 
 <h2 id="merges">merges</h2>
 <p>
@@ -1560,8 +1611,7 @@ and spikes when running
 <a href="../proton.html#proton-maintenance-jobs">maintenance jobs</a>.
 Tuning these limits should be done with extreme care,
 and setting them too high might lead to permanent data loss.
-They are best left untouched, using the defaults, and cannot be set
-in <a href="https://cloud.vespa.ai/">Vespa Cloud</a>.
+They are best left untouched, using the defaults, and cannot be set in Vespa Cloud.
 </p>
 <table class="table">
   <thead>
@@ -1577,12 +1627,12 @@ in <a href="https://cloud.vespa.ai/">Vespa Cloud</a>.
     <tr><th>memory</th>
       <td>optional</td>
       <td>float<br/>[0, 1]</td>
-      <td>0.8</td>
+      <td>0.8/0.75</td>
       <td>
         <p id="memory">
           Fraction of physical memory that can be resident memory in anonymous mapping on a content node before feed is blocked.
           Total physical memory is sampled as the minimum of <code>sysconf(_SC_PHYS_PAGES) * sysconf(_SC_PAGESIZE)</code>
-          and the cgroup (v1 or v2) memory limit.
+          and the cgroup (v1 or v2) memory limit. Nodes with 8 Gib or less memory in Vespa Cloud has a limit of 0.75.
         </p>
       </td></tr>
   </tbody>
@@ -1628,26 +1678,6 @@ Tune the query dispatch behavior - child elements:
         it suffices to only return a fraction of the request number of hits from each node.
         Note that changing this number will have global ordering impact.
         See <em>top-k-probability</em> below for improving performance with fewer hits.</p></td></tr>
-    <tr><th>top-k-probability</th>
-      <td>optional</td>
-      <td>Double</td>
-      <td>0.9999</td>
-      <td><p id="top-k-probability">
-        Probability that the top K hits will be the globally best.
-        Based on this probability, the dispatcher will fetch enough hits from each node to achieve this.
-        The only way to guarantee a probability of 1.0 is to fetch K hits from each partition.
-        However, by reducing the probability from 1.0 to 0.99999, one can significantly reduce number of hits fetched
-        and save both bandwidth and latency.
-        The number of hits to fetch from each partition is computed as:
-        </p><p><!-- depends on mathjax -->
-        $${q}={\frac{k}{n}}+{qT}({p},{30})&times;{\sqrt{ {k}&times;{\frac{1}{n}}&times;({1}-{\frac{1}{n}}) }}$$
-        </p><p>
-        where qT is a Student's t-distribution.
-        With n=10 partitions, k=200 hits and p=0.99999, only 45 hits per partition is needed,
-        as opposed to 200 when p=1.0.
-        </p><p>
-        Use this option to reduce network and container cpu/memory in clusters with many nodes per group -
-        see <a href="../performance/sizing-search.html">Vespa Serving Scaling Guide</a>.</p></td></tr>
     <tr><th>dispatch-policy</th>
       <td>optional</td>
       <td>best-of-random-2 / adaptive</td>
@@ -1668,6 +1698,20 @@ Tune the query dispatch behavior - child elements:
             <td>measures latency, preferring lower latency groups, selecting group with probability latency/(sum latency over all groups)</td>
           </tr>
         </table>
+    <tr><th style="white-space: nowrap">prioritize-availability</th>
+        <td>optional</td>
+        <td>Boolean</td>
+        <td>true</td>
+        <td>
+            <p id="prioritize-availability">
+                With <a href="../performance/sizing-search.html#data-distribution">grouped distribution</a>:
+                If true, or by default, all groups that are within min-active-docs-coverage of the <b>median</b>
+                of the document count of other groups will be used to service queries. If set to false, only
+                groups within min-active-docs-coverage of the <b>max</b> document count will be used,
+                with the consequence that full coverage is prioritized over availability when
+                multiple groups are lacking content, since the remaining groups may not be able
+                to service the full query load.
+            </p></td></tr>
     <tr><th style="white-space: nowrap">min-active-docs-coverage</th>
       <td>optional</td>
       <td>A float percentage</td>
@@ -1678,7 +1722,27 @@ Tune the query dispatch behavior - child elements:
         The percentage of active documents one needs to have
         compared to average of other groups in order to be active for serving queries.
         Because of measurement timing differences, it is not advisable to tune this above 99 percent.
-        </p>
+        </p></td></tr>
+    <tr><th>top-k-probability</th>
+        <td>optional</td>
+        <td>Double</td>
+        <td>0.9999</td>
+        <td><p id="top-k-probability">
+            Probability that the top K hits will be the globally best.
+            Based on this probability, the dispatcher will fetch enough hits from each node to achieve this.
+            The only way to guarantee a probability of 1.0 is to fetch K hits from each partition.
+            However, by reducing the probability from 1.0 to 0.99999, one can significantly reduce number of hits fetched
+            and save both bandwidth and latency.
+            The number of hits to fetch from each partition is computed as:
+        </p><p class="equation-container"><!-- depends on mathjax -->
+            $${q}={\frac{k}{n}}+{qT}({p},{30})&times;{\sqrt{ {k}&times;{\frac{1}{n}}&times;({1}-{\frac{1}{n}}) }}$$
+        </p><p>
+            where qT is a Student's t-distribution.
+            With n=10 partitions, k=200 hits and p=0.99999, only 45 hits per partition is needed,
+            as opposed to 200 when p=1.0.
+        </p><p>
+            Use this option to reduce network and container cpu/memory in clusters with many nodes per group -
+            see <a href="../performance/sizing-search.html">Vespa Serving Scaling Guide</a>.</p></td></tr>
   </tbody>
 </table>
 
@@ -1775,12 +1839,14 @@ Tuning parameters for the cluster controller managing this cluster - child eleme
     <tr><th>groups-allowed-down-ratio</th>
       <td>optional</td>
       <td></td>
-      <td></td>
+      <td><a href="https://github.com/vespa-engine/vespa/blob/master/configdefinitions/src/vespa/fleetcontroller.def">
+        groups-allowed-down-ratio</a></td>
       <td>
         <p id="groups-allowed-down-ratio">
         A ratio for the number of content groups that are allowed to be
         down simultaneously. A value of 0.5 means that 50% of the groups are
-        allowed to be down.
+        allowed to be down. The default is to allow only one group to be down
+	at a time.
         </p>
       </td></tr>
   </tbody>

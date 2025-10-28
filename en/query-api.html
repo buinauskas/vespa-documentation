@@ -1,8 +1,6 @@
 ---
-# Copyright Vespa.ai. Licensed under the terms of the Apache 2.0 license. See LICENSE in the project root.
+# Copyright Vespa.ai. All rights reserved.
 title: "Query API"
-redirect_from:
-- /documentation/query-api.html
 ---
 
 <p>
@@ -286,7 +284,7 @@ $ vespa query "select * from music where true limit 0 | all(group(year) each(max
 </pre>
 <p>
   Fields used in grouping must be <a href="attributes.html">attributes</a>.
-  The grouping expression is part of the QYL query string, appended at the end.
+  The grouping expression is part of the YQL query string, appended at the end.
 </p><p>
   Applications can group <em>all</em> documents (select all documents in YQL).
   Using <code>limit 0</code> returns grouping results only.
@@ -365,7 +363,7 @@ use this to write code to manipulate results.
     <p>
       The default search chain is <em>vespa</em> -
       find installed components in this chain by inspecting <code>ApplicationStatus</code>
-      like in the <a href="vespa-quick-start.html">quick-start</a>.
+      like in the <a href="deploy-an-application-local.html">quick-start</a>.
       Adding <code>&amp;trace.level=4</code> (or higher) to the query will
       emit the components invoked in the query, and is useful to analyze ordering.
     </p>
@@ -399,7 +397,7 @@ use this to write code to manipulate results.
   <li>
     At this point the query enters one or more <a href="reference/services-content.html">content clusters</a>.
     In a content cluster with <a href="elasticity.html#grouped-distribution">grouped distribution</a>,
-    the query is dispatched to one group at a time using a
+    the query is dispatched to all content nodes within a single group using a
     <a href="reference/services-content.html#dispatch-tuning">dispatch policy</a>,
     while with a flat single group content cluster the query is dispatched to all content nodes.
   </li><li>
@@ -504,9 +502,8 @@ application!" %}
 This can block POSTed queries." %}
 
 
-<h3 id="jetty">Jetty</h3>
+<h3 id="jetty">HTTP</h3>
 <p>
-  The Container uses Jetty for HTTP.
   Configure the <a href="reference/services-http.html#server">http server</a> -
   e.g. set <em>requestHeaderSize</em> to configure URL length (including headers):
 </p>
@@ -534,6 +531,21 @@ This can block POSTed queries." %}
   Stack Overflow question</a>.
 </p>
 
+<p>When implementing a client for the query API, consider the following guidelines for handling HTTP status codes:</p>
+<h4>Client errors vs. server errors</h4>
+<p>
+  In general clients should only retry requests on <em>server errors</em> (5xx) - not on <em>client errors</em> (4xx).
+  For example, a client should  <strong>not</strong> retry a request after receiving a <code>400 Bad Request</code> response.
+</p>
+
+<h4>Back-pressure handling</h4>
+<p>
+  Be careful when handling 5xx responses, especially <code>503 Service Unavailable</code> and <code>504 Gateway Timeout</code>.
+  These responses typically indicate an overloaded system, and blindly retrying without backoff will only worsen the situation.
+  For example, <code>503 Service Unavailable</code> is returned whenever there are no available search handler threads
+  to serve the request. This is a clear indication of back-pressure from the system, and clients should
+  reduce overall throughput and implement appropriate throttling mechanisms to avoid exacerbating the overload condition.
+</p>
 
 
 <h2 id="timeout">Timeout</h2>
@@ -633,6 +645,18 @@ This can block POSTed queries." %}
   <a href="https://javadoc.io/page/com.yahoo.vespa/container-search/latest/com/yahoo/search/Query.html">Query.trace</a>
   to add trace output.
 </p>
+
+
+<h3 id="large-memory-usage">Large memory usage</h3>
+<p>Queries that allocate more than 2G RAM will log messages like:</p>
+<pre>
+mmap 2727 of size 8589934592 from : search::attribute::PostingListMerger&lt;int&gt;::reserveArray(unsigned int, unsigned long)(0x40001513eef0)
+
+(0x400013595334) from (0x400013593acc) from operator new(unsigned long)(0x400013592f88) from search::attribute::PostingListMerger&lt;int&gt;::reserveArray(unsigned int, unsigned long)(0x40001513eef0) from search::attribute::PostingListSearchContextT&lt;int&gt;::fetchPostings(search::queryeval::ExecuteInfo const&amp;, bool)(0x400015159a38) from search::queryeval::SameElementBlueprint::fetchPostings(search::queryeval::ExecuteInfo const&amp;)(0x4000154f36fc) from search::queryeval::IntermediateBlueprint::fetchPostings(search::queryeval::ExecuteInfo const&amp;)(0x40001549ad38) from proton::matching::MatchToolsFactory::MatchToolsFactory(proton::matching::QueryLimiter&amp;, vespalib::Doom const&amp;, proton::matching::ISearchContext&amp;, search::attribute::IAttributeContext&amp;, search::engine::Trace&amp;, std::basic_string_view&lt;char, std::char_traits&lt;char&gt; &gt;, std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt; const&amp;, ...
+
+1 mappings of accumulated size 8589934592
+</pre>
+<p>This does not necessarily indicate that something is wrong, e.g., range searches use much memory.</p>
 
 
 

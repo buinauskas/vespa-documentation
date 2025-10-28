@@ -1,8 +1,6 @@
 ---
-# Copyright Vespa.ai. Licensed under the terms of the Apache 2.0 license. See LICENSE in the project root.
+# Copyright Vespa.ai. All rights reserved.
 title: "Container Tuning"
-redirect_from:
-- /documentation/performance/container-tuning.html
 ---
 
 <p>
@@ -38,7 +36,8 @@ redirect_from:
 <p>
   The container will pre-start the minimum number of worker threads,
   so even an idle container may report running several hundred threads.
-  The thread pool is pre-started with the number of thread specified in the <code>threads</code> parameter.
+  The thread pool is pre-started with the number of thread specified in the
+  <a href="../reference/services-search.html#threadpool-threads"><code>threads</code></a> parameter.
   Note that tuning the capacity upwards increases the risk of high GC pressure
   as concurrency becomes higher with more in-flight requests.
   The GC pressure is a function of number of in-flight requests, the time it takes to complete the request
@@ -46,7 +45,8 @@ redirect_from:
   Increasing the queue size will allow the application to handle shorter traffic bursts without rejecting requests,
   although increasing the average latency for those requests that are queued up.
   Large queues will also increase heap consumption in overload situations.
-  Extra threads will be created once the queue is full (when <code>boost</code> is specified), and are destroyed after an idle timeout.
+  Extra threads will be created once the queue is full (when <a href="../reference/services-search.html#threads.boost">
+  <code>boost</code></a> is specified), and are destroyed after an idle timeout.
   If all threads are occupied, requests are rejected with a 503 response.
 </p>
 <p>
@@ -56,6 +56,15 @@ redirect_from:
 </p>
 {% include note.html content=' If the queue size is set to 0 the metric measuring the queue size -
 <code>jdisc.thread_pool.work_queue.size</code> - will instead switch to measure how many threads are active.'%}
+
+<h3 id="recommendation">Recommendation</h3>
+<p>
+  A fixed size pool is preferable for stable latency during peak load,
+  at a cost of a higher static memory load and increased context-switching overhead if excessive number of threads are configured.
+  Variable size pool is mostly beneficial to minimize memory consumption during low-traffic periods, and in general if the size of peak load is somewhat unknown.
+  The downside is that once all core threads are active,
+  latency will increase as additional tasks are queued and launching extra threads is relatively expensive as it involves system calls to the OS.
+</p>
 
 <h3 id="container-worker-threads-min">Lower limit</h3>
 The container will override any configuration if the effective value is below a fixed minimum. This is to
@@ -72,20 +81,44 @@ reduce the risk of certain deadlock scenarios and improve concurrency for low-re
     <search>
         <!-- Search handler thread pool -->
         <threadpool>
-            <threads boost="12">4</threads>
+            <!-- Don't set 'boost' attribute or set equal to thread value for fixed pool size  (recommended) -->
+            
+            <!-- 40x vcpu (e.g 1000 threads if 25 vcpu) -->
+            <threads>40</threads>
+
+            <!-- 100 x threads (e.g 4000 if threads set to 40 and 25 vcpu) -->
             <queue>100</queue>
         </threadpool>
     </search>
 
     <!-- Default thread pool -->
     <config name="container.handler.threadpool">
-        <maxthreads>200</maxthreads>
+        <!-- Set corePoolSize==maxthreads for fixed size pool (recommended) -->
+        <!-- Note: absolute pool size -->
+        <corePoolSize>1000</corePoolSize>
+        <maxthreads>1000</maxthreads>
     </config>
 
 </container>
 {% endhighlight %}</pre>
 
-
+<h2 id="container-memory-usage">Container memory usage</h2>
+<blockquote>Help, my container nodes are using more than 70% memory!</blockquote>
+<p>
+  It's common to observe the container process utilizing its maximum configured heap size.
+  This, by itself, is not necessarily an indication of a problem. The Java Virtual Machine (JVM)
+  manages memory within the allocated heap, and it's designed to use as much of it as possible
+  to reduce the frequency of garbage collection.
+<p>
+  To understand whether enough memory is allocated, look at the garbage collection activity.
+  If GC is running frequently and using significant CPU or causing long pauses, it might
+  indicate that the heap size is too small for the workload. In such cases, consider increasing
+  the maximum heap size. However, if the garbage collector is running infrequently and efficiently,
+  it's perfectly normal for the container to utilize most or all of its allocated heap, and even more
+  (as some memory will also be allocated outside the heap; e.g. direct buffers for efficient data transfer).
+<p>
+  Vespa exports several metrics to allow you to monitor JVM GC performance, such as <a href="../reference/container-metrics-reference.html#jvm_gc_overhead">jvm.gc.overhead</a>
+  - if this exceeds 8-10% you should consider increasing heap memory and/or tuning GC settings.
 
 <h2 id="jvm-heap-size">JVM heap size</h2>
 <p>

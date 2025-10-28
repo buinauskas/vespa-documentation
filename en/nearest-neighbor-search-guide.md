@@ -1,5 +1,5 @@
 ---
-# Copyright Vespa.ai. Licensed under the terms of the Apache 2.0 license. See LICENSE in the project root.
+# Copyright Vespa.ai. All rights reserved.
 title: "Vespa nearest neighbor search - a practical guide"
 ---
 
@@ -188,7 +188,7 @@ $ python3 create-vespa-feed.py lastfm_test > feed.jsonl
 </div>
 
 ## Create a Vespa Application Package
-A [Vespa application package](application-packages.html) is the set 
+A [Vespa application package](applications.html) is the set 
 of configuration files and Java plugins that together define the behavior of a Vespa system:
 what functionality to use, the available document types, how ranking will be done,
 and how data will be processed during feeding and indexing.
@@ -525,16 +525,16 @@ The final step is to download embedding model files
   <button class="d-icon d-duplicate pre-copy-button" onclick="copyPreContent(this)"></button>
 <pre data-test="exec">
 $ curl -L -o app/model/e5-small-v2-int8.onnx \
-    https://github.com/vespa-engine/sample-apps/raw/master/simple-semantic-search/model/e5-small-v2-int8.onnx 
+    https://github.com/vespa-engine/sample-apps/raw/master/examples/model-exporting/model/e5-small-v2-int8.onnx
 $ curl -L -o app/model/tokenizer.json \
-    https://github.com/vespa-engine/sample-apps/raw/master/simple-semantic-search/model/tokenizer.json 
+    https://github.com/vespa-engine/sample-apps/raw/master/examples/model-exporting/model/tokenizer.json
 </pre>
 </div>
 
 ## Deploy the application package
 
 The application package can now be deployed to a running Vespa instance.
-See also the [Vespa quick start guide](vespa-quick-start.html).
+See also the [Vespa quick start guide](deploy-an-application-local.html).
 
 Start the Vespa container image using Docker:
 

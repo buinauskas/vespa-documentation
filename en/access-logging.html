@@ -1,8 +1,6 @@
 ---
-# Copyright Vespa.ai. Licensed under the terms of the Apache 2.0 license. See LICENSE in the project root.
+# Copyright Vespa.ai. All rights reserved.
 title: Access Logging
-redirect_from:
-- /documentation/access-logging.html
 ---
 
 <p>
@@ -41,8 +39,8 @@ redirect_from:
   <tr><td>port</td><td>number</td><td>The IP port number of the interface on which the request was received</td><td>yes</td></tr>
   <tr><td>remoteaddr</td><td>string</td><td>The IP address of the <a href="#logging-remote-address-port">remote client</a> if specified in HTTP header</td><td>no</td></tr>
   <tr><td>remoteport</td><td>string</td><td>The port used from the <a href="#logging-remote-address-port">remote client</a> if specified in HTTP header </td><td>no</td></tr>
-  <tr><td>peeraddr</td><td>string</td><td>Address of immediate client making request if different than <em>remoteaddr</em></td><td>no</td></tr>
-  <tr><td>peerport</td><td>string</td><td>Port used by immediate client making request if different than <em>remoteport</em></td><td>no</td></tr>
+  <tr><td>peeraddr</td><td>string</td><td>Address of immediate client making request if different from <em>remoteaddr</em></td><td>no</td></tr>
+  <tr><td>peerport</td><td>string</td><td>Port used by immediate client making request if different from <em>remoteport</em></td><td>no</td></tr>
   <tr><td>user-principal</td><td>string</td><td>The name of the authenticated user (java.security.Principal.getName()) if principal is set</td><td>no</td></tr>
   <tr><td>ssl-principal</td><td>string</td><td>The name of the x500 principal if client is authenticated through SSL/TLS</td><td>no</td></tr>
   <tr><td>search</td><td>object</td><td>Object holding search specific fields</td><td>no</td></tr>
@@ -114,6 +112,42 @@ $ <a href="https://stedolan.github.io/jq/">jq</a> '. + {iso8601date:(.time | tod
 For details on the access logging configuration see <a href="reference/services-container.html#accesslog">
 accesslog in the container</a> element in <em>services.xml</em>.
 </p>
+<p>
+Key configuration options include:
+</p>
+<ul>
+  <li><strong>fileNamePattern</strong>: Pattern for log file names with time variable support</li>
+  <li><strong>rotationInterval</strong>: Time-based rotation schedule (minutes since midnight)</li>
+  <li><strong>rotationSize</strong>: Size-based rotation threshold in bytes (0 = disabled)</li>
+  <li><strong>rotationScheme</strong>: Either 'sequence' or 'date'</li>
+  <li><strong>compressionFormat</strong>: GZIP or ZSTD compression for rotated files</li>
+</ul>
+
+<h3 id="logging-request-content">Logging Request Content</h3>
+<p>
+  Vespa supports logging of request content for specific URI paths. This is useful for inspecting query content of search POST requests 
+  or document operations of Document v1 POST/PUT requests. The request content is logged as a base64-encoded string in the JSON access log.
+</p>
+<p>
+  To configure request content logging, use the <a href="reference/services-container.html#request-content">request-content</a> element 
+  in the accesslog configuration in <em>services.xml</em>.
+</p>
+<p>
+  Here is an example of how the request content appears in the JSON access log:
+</p>
+<pre>
+{
+  ...
+  "method": "POST",
+  "uri": "/search",
+  ...,
+  "request-content": {
+    "type": "application/json; charset=utf-8",
+    "length": 12345,
+    "body": "&lt;raw bytes encoded with base64&gt;"
+  }
+}
+</pre>
 
 <h3 id="file-name-pattern">File name pattern</h3>
 <p>
@@ -162,7 +196,7 @@ The following parts in the file name are expanded:
 <p>
   Apache httpd style log <em>rotation</em> can be configured by setting the <em>rotationScheme</em>.
   There's two alternatives for the rotationScheme, sequence and date.
-  The rotation time is controlled by setting <em>rotationInterval</em>.
+  Rotation can be triggered by time intervals using <em>rotationInterval</em> and/or by file size using <em>rotationSize</em>.
 </p>
 
 
@@ -216,7 +250,6 @@ The following parts in the file name are expanded:
   defined by the two last numbers for the rest of the day.
   E.g. "0 100 240 480 ..." is expanded to "0 100 240 480 720 960 1200"
 </p>
-
 
 <h3 id="log-retention">Log retention</h3>
 <p>

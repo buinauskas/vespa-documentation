@@ -1,8 +1,6 @@
 ---
-# Copyright Vespa.ai. Licensed under the terms of the Apache 2.0 license. See LICENSE in the project root.
+# Copyright Vespa.ai. All rights reserved.
 title: "Page Templates"
-redirect_from:
-- /documentation/page-templates.html
 ---
 
 <p>
@@ -37,7 +35,7 @@ A complete reference of all the permissible content of page templates is found i
 <p>
 A page template is an XML file which is placed in the
 directory <code>search/page-templates/</code> in
-the <a href="application-packages.html">application package</a>.
+the <a href="applications.html">application package</a>.
 To start using page templates:
 </p>
 <ul>
@@ -47,7 +45,7 @@ To start using page templates:
   <li>Add the searcher
     <a href="https://javadoc.io/doc/com.yahoo.vespa/container-search/latest/com/yahoo/search/pagetemplates/PageTemplateSearcher.html">com.yahoo.search.pagetemplates.PageTemplateSearcher</a>
       to the default <a href="reference/services-search.html">search chain</a> in <em>services.xml</em>.</li>
-  <li><a href="application-packages.html#deploy">deploy</a>
+  <li><a href="applications.html#deploy">deploy</a>
       the application package.</li>
   <li>Add these query parameters: <code>page.id=[comma-separated list of page id's]</code>
       and <code>presentation.format=<a href="reference/page-result-format.html">page</a></code>.</li>
@@ -278,11 +276,11 @@ OSGI bundles</a> for deployment,
 see <a href="jdisc/container-components.html">container components</a>.
 </p><p>
 The packaged component is added to the <code>components/</code>
-directory of the <a href="application-packages.html">application package</a>.
+directory of the <a href="applications.html">application package</a>.
 </p><p>
-The page template searcher must be configured with a list of the
-resolvers which should be available.  This is done by expanding the
-page template searcher configuration with a components configuration:
+  The page template searcher must be configured with a list of the
+  resolvers which should be available.  This is done by expanding the
+  page template searcher configuration with a <em>components</em> configuration:
 </p>
 <pre>
 &lt;searcher id="com.yahoo.search.pagetemplates.PageTemplateSearcher" bundle="the name in &lt;artifactId&gt; in your pom.xml" &gt;
@@ -303,7 +301,7 @@ page template searcher configuration with a components configuration:
 </pre>
 <p>
 With this, the application is
-<a href="application-packages.html#deploy">deployed</a> as usual.
+<a href="applications.html#deploy">deployed</a> as usual.
 </p>
 
 

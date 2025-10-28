@@ -1,8 +1,6 @@
 ---
-# Copyright Vespa.ai. Licensed under the terms of the Apache 2.0 license. See LICENSE in the project root.
+# Copyright Vespa.ai. All rights reserved.
 title: "Geo Search"
-redirect_from:
-- /documentation/geo-search.html
 ---
 
 <p>
@@ -283,7 +281,7 @@ To give some more example positions, here is a list of some airports with their 
   This document does not describe how to write a searcher plugin for the Container,
   refer to the <a href="searcher-development.html">container documentation</a>.
   However, let us review the syntax expected by <em>DistanceToPath</em>.
-  As noted in the the <a href="reference/rank-features.html#distanceToPath(name).distance">
+  As noted in the <a href="reference/rank-features.html#distanceToPath(name).distance">
   rank features reference</a>,
   the path is supplied as a query parameter by name of the feature and the <code>path</code> keyword:
 </p>
@@ -297,10 +295,10 @@ yql=(&hellip;)&amp;rankproperty.distanceToPath(<em>name</em>).path=(x1,y1,x2,y2,
   The path itself is parsed as a list of <code>N</code> coordinate pairs
   that together form <code>N-1</code> line segments:
 </p>
-<p><!-- depends on mathjax -->
+<p class="equation-container"><!-- depends on mathjax -->
   $$(x_1,y_1) \rightarrow (x_2,y_2), (x_2,y_2) \rightarrow (x_3,y_3), (&hellip;), (x_{N-1},y_{N-1}) \rightarrow (x_N,y_N)$$
 </p>
-  {% include note.html content="The path is <em>not</em> in a readable (longitude, latitude) format,
+  {% include note.html content="The path is <em>not</em> in a readable (latitude, longitude) format,
   but is a pair of integers in the internal format (degrees multiplied by 1 million).
   If a transform is required from geographic coordinates to this, the search plugin must do it;
   note that the first number in each pair (the 'x') is longitude (degrees East or West)

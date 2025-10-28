@@ -1,7 +1,16 @@
 name: Vespa Documentation Search Feed
 on:
+  workflow_dispatch:
   push:
     branches: [ master ]
+    paths:
+      - '*.md'
+      - '*.html'
+      - '**/*.md'
+      - '**/*.html'
+      - '.github/workflows/feed.yml'
+      - '_*config.yml'
+      - 'feed_to_vespa.py'
 
 env:
   DATA_PLANE_PUBLIC_KEY     : ${{ secrets.VESPA_TEAM_DATA_PLANE_PUBLIC_CERT }}
@@ -14,11 +23,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
 
     - uses: ruby/setup-ruby@v1
       with:
-        ruby-version: 3.1
+        ruby-version: 3.4.7
         bundler-cache: false
 
     - name: Build site
@@ -27,7 +36,7 @@ jobs:
         bundle exec jekyll build -p _plugins-vespafeed
 
     - name: Setup Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: '3.x'
 
@@ -35,11 +44,8 @@ jobs:
       run: |
         pip3 install PyYAML mmh3 requests html5lib beautifulsoup4 markdownify tiktoken
 
-    - name: Get Vespa CLI - update to later versions as needed
-      run: |
-        apt update && apt -y install curl
-        curl -SsLo vespa-cli.tar.gz https://github.com/vespa-engine/vespa/releases/download/v8.209.11/vespa-cli_8.209.11_linux_amd64.tar.gz
-        tar -xvf vespa-cli.tar.gz && ln -fs vespa-cli_8.209.11_linux_amd64/bin/vespa
+    - name: Install Vespa CLI
+      uses: vespa-engine/setup-vespa-cli-action@v1
 
     - name: Feed docs site
       run: |
@@ -47,25 +53,17 @@ jobs:
         # See https://docs.vespa.ai/en/vespa-cli.html.
         # The environment variables below have credentials for endpoint access -
         # use the key/cert files in .vespa and paste their content into GitHub Secrets.
-        # VESPA_CLI_API_KEY must be set and empty as below.
         export VESPA_CLI_DATA_PLANE_CERT
         export VESPA_CLI_DATA_PLANE_KEY
-        export VESPA_CLI_API_KEY=
         ./feed_to_vespa.py _config.yml
 
     - name: Feed paragraphs site
       run: |
-        export VESPA_CLI_DATA_PLANE_CERT
-        export VESPA_CLI_DATA_PLANE_KEY
-        export VESPA_CLI_API_KEY=
         ./feed-split.py open_index.json https://docs.vespa.ai questions.jsonl
         ./feed_to_vespa.py _paragraphs_config.yml
 
     - name: Feed suggestions
       run: |
-        export VESPA_CLI_DATA_PLANE_CERT
-        export VESPA_CLI_DATA_PLANE_KEY
-        export VESPA_CLI_API_KEY=
         ./feed_to_vespa.py _suggestions_config.yml
      
 

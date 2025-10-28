@@ -1,8 +1,6 @@
 ---
-# Copyright Vespa.ai. Licensed under the terms of the Apache 2.0 license. See LICENSE in the project root.
+# Copyright Vespa.ai. All rights reserved.
 title: "Configuring Java components"
-redirect_from:
-- /documentation/configuring-components.html
 ---
 
 <p>
@@ -28,7 +26,7 @@ Configurable components in short:
   The application code is interfacing with config through the generated code &mdash; code and config is always in sync.
   This configuration should be used for all state which is assumed to stay constant
   for the <em>lifetime of the component instance</em>.
-  Use <a href="application-packages.html">deploy</a> to push and activate code and config changes.
+  Use <a href="applications.html">deploy</a> to push and activate code and config changes.
 </p>
 
 
@@ -154,8 +152,7 @@ public class MyComponentTest {
 
 <p>
   Files can be transferred using either
-  <a href="application-packages.html#file-distribution">file distribution</a>
-  or URL download.
+  <a href="/en/deployment.html#file-distribution">file distribution</a> or URL download.
   File distribution is used when the files are added to the application package.
   If for some reason this is not convenient, e.g. due to size,
   origin of file or update frequency, Vespa can download the file and make it available for the component.
@@ -212,13 +209,13 @@ public class MyComponent {
   The <code>myFile()</code> and <code>myModel()</code> getter returns a <code>java.nio.Path</code> object,
   while the <code>myUrl()</code> getter returns a <code>java.io.File</code> object.
   The container framework guarantees that these files are fully present at the given location before the component
-  constructor is invoked so they can always be accessed right away.
+  constructor is invoked, so they can always be accessed right away.
 </p>
 <p>
   When the client asks for config that uses the <code>url</code> or <code>model</code> config
-  type with an URL, the content will be downloaded and cached on the nodes that need it. If
+  type with a URL, the content will be downloaded and cached on the nodes that need it. If
   you want to change the content, the application package needs to be updated with a new URL
-  for the changed content and the application <a href="application-packages.html">deployed</a>,
+  for the changed content and the application <a href="applications.html">deployed</a>,
   otherwise the cached content will still be used. This avoids unintended changes to the
-  application without any change to it if the content of an URL changes.
+  application if the content of a URL changes.
 </p>

@@ -1,8 +1,6 @@
 ---
-# Copyright Vespa.ai. Licensed under the terms of the Apache 2.0 license. See LICENSE in the project root.
+# Copyright Vespa.ai. All rights reserved.
 title: "Rank Feature Reference"
-redirect_from:
-- /documentation/reference/rank-features.html
 ---
 
 <p>
@@ -18,7 +16,7 @@ Notes:
 </p>
 <ul>
   <li>
-    Types: All rank feature values are floats. Ints are converted to exact whole value floats.
+    Types: All rank feature values are floats. Integers are converted to exact whole value floats.
     String values are converted to exact whole value floats using a hash function.
     String literals in ranking expressions are converted using the same hash function,
     to enable equality tests on string values.
@@ -39,7 +37,8 @@ Notes:
 
 <h2 id="feature-list">Feature list</h2>
 
-<table class="table">
+<!--table-to-list-->
+<table class="table" id="rank-feature-table">
 
 
 
@@ -346,7 +345,7 @@ tensor&lt;double&gt;(dim{}):{ {dim:v1}:1.0, {dim:v2}:1.0, {dim:v3}:1.0} }
   <td>0</td>
   <td><p id="fieldMatch(name).absoluteOccurrence">
     Returns a normalized measure of the number of occurrence of the terms of the query:
-    </p><p><!-- depends on mathjax -->
+    </p><p class="equation-container" class="equation-container"><!-- depends on mathjax -->
     $$\frac{\sum_{\text{all query terms}}(min(\text{number of occurrences of the term},maxOccurrences))}{(\text{query term count} &times; 100)}$$
     </p><p>
     This is 1 if there are many occurrences of the query terms, and 0 if there are none.
@@ -705,7 +704,9 @@ tensor&lt;double&gt;(dim{}):{ {dim:v1}:1.0, {dim:v2}:1.0, {dim:v3}:1.0} }
 
 <tr><td>elementCompleteness(<em>name</em>).elementWeight</td>
   <td>0</td>
-  <td><p id="elementCompleteness(name).elementWeight">The weight of the best matching element.</p></td></tr>
+  <td><p id="elementCompleteness(name).elementWeight">
+    The weight of the best matching element, starting from the default - i.e., negative weights will return 0.
+  </p></td></tr>
 
 <tr><td>elementSimilarity(<em>name</em>)</td>
   <td>0</td>
@@ -830,6 +831,13 @@ tensor&lt;double&gt;(dim{}):{ {dim:v1}:1.0, {dim:v2}:1.0, {dim:v3}:1.0} }
       </li>
     </ul>
     <p>
+      {% include note.html content="<code>closeness()</code> is calculated <strong>only</strong> based on the vectors
+      matched with nearestNeighbor operator.
+      This means that the value of <code>closeness()</code> is not necessarily calculated based on the same vector
+      returned by <code>closest()</code> rank feature if nearestNeighbor search is approximate, as
+      <code>closest()</code> will be calculated based on <em>all</em> specified document vectors." %}
+    </p>
+    <p>
     The output value is
     $$ closeness(dimension,name) = \frac{1.0}{1.0 + distance(dimension,name)}$$
     </p>
@@ -855,12 +863,12 @@ tensor&lt;double&gt;(dim{}):{ {dim:v1}:1.0, {dim:v2}:1.0, {dim:v3}:1.0} }
   <td><p id="freshness(name).logscale">
     A logarithmic-shaped freshness; also goes from 1 to 0, but looks like <a href="#freshness">freshness plot</a>.
     The function is based on <code>-log(age(name) + scale)</code> and is calculated as:
-    </p><p><!-- depends on mathjax -->
+    </p><p class="equation-container" class="equation-container"><!-- depends on mathjax -->
     $$\frac{log(maxAge + scale) - log(age(name) + scale)}{log(maxAge + scale) - log(scale)}$$
     </p><p>
     where scale is defined using
     <a href="rank-feature-configuration.html#freshness"> halfResponse and maxAge</a>:
-    </p><p><!-- depends on mathjax -->
+    </p><p class="equation-container" class="equation-container"><!-- depends on mathjax -->
     $$\frac{-halfResponse^2}{2 &times; halfResponse - maxAge}$$
     </p><p>
     When <code>age(name) == halfResponse</code> the function output is 0.5.</p>
@@ -940,7 +948,7 @@ tensor&lt;double&gt;(dim{}):{ {dim:v1}:1.0, {dim:v2}:1.0, {dim:v3}:1.0} }
     Used with the
     <a href="query-language-reference.html#nearestneighbor">nearestNeighbor</a>
     query operator and a tensor field attribute <em>name</em> storing multiple vectors per document.
-    This feature returns a tensor with one mapped dimension and one point with a value of 1.0,
+    This feature returns a tensor with one or more mapped dimensions and one point with a value of 1.0,
     where the label of that point indicates which document vector was closest to the
     query vector in the nearest neighbor search.
     </p>
@@ -1087,6 +1095,39 @@ tensor&lt;double&gt;(dim{}):{ {dim:v1}:1.0, {dim:v2}:1.0, {dim:v3}:1.0} }
     </p>
   </td></tr>
 
+<tr>
+  <td>elementwise(bm25(field),dimension,cell_type)</td>
+  <td><code>tensor&lt;cell_type&gt;(dimension{}):{}</code></td>
+  <td>
+    <p id="elementwise-bm25">
+      Calculates the <a href="https://en.wikipedia.org/wiki/Okapi_BM25">Okapi BM25</a>
+      ranking function over each element in the given <em>multi-valued</em> <a href="schema-reference.html#indexing-index">indexed string field</a> and creates a tensor with a single mapped dimension containing the bm25 score for each matching element.
+      The element indexes (starting at 0) are used as dimension labels.
+      This feature is more expensive than <a href="#bm25">bm25</a>,
+      does not need the <em>enable-bm25</em> flag and can be tuned with
+      <a href="rank-feature-configuration.html#elementwise-bm25">rank properties</a>.
+    </p>
+    <p>
+      The <em>cell_type</em> parameter can be omitted (the default value is <code>double</code>) except when setting rank properties.
+    </p>
+    <p>
+      Example: If the <code>content</code> field is of type <code>array&lt;string&gt;</code>
+      where query terms are found in elements 2 and 5 then the feature
+      <code>elementwise(bm25(content),x,float)</code> as a summary feature
+      might be shown as:
+    </p>
+<pre>
+"elementwise(bm25(content),x,float)": {
+  "type": "tensor<float>(x{})",
+  "cells": {
+    "2": 0.5112776,
+    "5": 0.1021805
+  }
+}
+</pre>
+  </td>
+</tr>
+
 <tr><td>nativeRank</td>
   <td>0</td>
   <td>
@@ -1212,6 +1253,14 @@ tensor&lt;double&gt;(dim{}):{ {dim:v1}:1.0, {dim:v2}:1.0, {dim:v3}:1.0} }
     </p>
   </td></tr>
 
+<tr><td>relevanceScore</td>
+    <td>-</td>
+    <td>
+        <p id="relevancescore">
+            The value of the rank score calculated either in the first or (when defined) in the second phase (unavailable in first phase and second phase ranking expressions) (since 8.559.30).
+        </p>
+    </td></tr>
+
 <tr><td colspan="3"></td></tr>
 <tr><td colspan="3"><h3 id="global-features">Global features</h3></td></tr>
 <tr class="trx"><th class="thx">Feature name</th><th class="thx">Default</th><th class="thx">Description</th></tr>
@@ -1326,7 +1375,7 @@ tensor&lt;double&gt;(dim{}):{ {dim:v1}:1.0, {dim:v2}:1.0, {dim:v3}:1.0} }
     {% include note.html content='Some of these features have the same names as features used with the <a href="query-language-reference.html#nearestneighbor">nearestNeighbor</a> query operator. Take care not to get them mixed up!'%}
   </td></tr>
 <tr class="trx"><th class="thx">Feature name</th><th class="thx">Default</th><th class="thx">Description</th></tr>
-  
+
 
 <tr><td>closeness(<em>name</em>)</td>
   <td>0</td>
@@ -1346,12 +1395,12 @@ tensor&lt;double&gt;(dim{}):{ {dim:v1}:1.0, {dim:v2}:1.0, {dim:v3}:1.0} }
     but looks like <a href="#closeness">closeness plot</a>.
     The function is a logarithmic fall-off based on
     <code>log(distance + scale)</code> and is calculated as:
-    </p><p><!-- depends on mathjax -->
+    </p><p class="equation-container" class="equation-container"><!-- depends on mathjax -->
     $$closeness(name).logscale = \frac{log(maxDistance + scale) - log(distance(name) + scale))}{(log(maxDistance + scale) - log(scale))}$$
     </p><p>
     where scale is defined using
     <a href="rank-feature-configuration.html#closeness">halfResponse and maxDistance</a>:
-    </p><p><!-- depends on mathjax -->
+    </p><p class="equation-container" class="equation-container"><!-- depends on mathjax -->
     $$scale = \frac{halfResponse^2}{(maxDistance - 2 &times; halfResponse)}$$
     </p><p>
     When <code>distance(name) == halfResponse</code> the function output is 0.5;
@@ -1364,7 +1413,7 @@ tensor&lt;double&gt;(dim{}):{ {dim:v1}:1.0, {dim:v2}:1.0, {dim:v3}:1.0} }
   <td>6400M</td>
   <td>
     <p id="distance(name)">
-      The euclidian distance from the query position to the given position attribute in millionths of degrees (about 10 cm).
+      The Euclidean distance from the query position to the given position attribute in millionths of degrees (about 10 cm).
       If there are multiple positions in the query, items that actually search in <em>name</em> is preferred.
       Also: if multiple query items search in <em>name</em>, or <em>name</em> is an array of positions, or both,
       the closest distance found is returned.
@@ -1412,7 +1461,7 @@ tensor&lt;double&gt;(dim{}):{ {dim:v1}:1.0, {dim:v2}:1.0, {dim:v3}:1.0} }
   <td>6400M</td>
   <td>
     <p id="distanceToPath(name).distance">
-    The euclidian distance from a path through 2d space
+    The Euclidean distance from a path through 2d space
     given in the query to the given position attribute in
     millionths of degrees. This is useful e.g. for finding the
     closest locations to a given road. The query path is set in the
@@ -1493,7 +1542,7 @@ tensor&lt;double&gt;(dim{}):{ {dim:v1}:1.0, {dim:v2}:1.0, {dim:v3}:1.0} }
           </ul>
         </ul>
         <p>
-        Lets say you want to calculate the average score of the <em>fieldMatch</em> feature for all index fields,
+        Let's say you want to calculate the average score of the <em>fieldMatch</em> feature for all index fields,
         but only consider the scores larger than 0. Then you can use the following setup of the <em>foreach</em> feature:
         </p><p>
         <code>foreach(fields,N,fieldMatch(N), "&gt;0", average)</code>.
@@ -1731,3 +1780,4 @@ set output "freshness-logscale.png"
 plot [0:90] [0:1] logscale_2d(x), logscale_7d(x), logscale_14d(x), linear(x)
 
 gnuplot script -->
+

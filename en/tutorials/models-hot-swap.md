@@ -1,8 +1,6 @@
 ---
-# Copyright Vespa.ai. Licensed under the terms of the Apache 2.0 license. See LICENSE in the project root.
+# Copyright Vespa.ai. All rights reserved.
 title: "Models hot swap tutorial"
-redirect_from:
-- /documentation/tutorials/models-hot-swap.html
 ---
 
 This tutorial builds on the [news recommendation tutorial](news-1-getting-started.html).
@@ -199,15 +197,33 @@ schema news_model {
             indexing: attribute
         }
     }
-    import field news_ref.title as title {}
+    import field news_ref.news_id as news_id {}
     import field news_ref.language as language {}
 }
 </pre>
+
+{% include important.html content="Only fields with the `attribute` indexing setting can be imported
+(e.g., the `title` field has the `index` setting and cannot be imported)." %}
 
 {% include note.html content="The shared `news` schema neither holds the model vector nor has a model field.
 However, it still has a version field, obtained from a dedicated `news` configuration.
 This version is used only for garbage collection of removed documents, as described below." %}
 
+
+## Alternatives to using parent documents
+An important note to the previous section is that parent documents are global and replicated to all nodes.
+Therefore, this will not scale to a larger corpus -
+one cannot store more unique documents than can be stored on a single node.
+
+As an alternative, do not use parent documents.
+As adding and removing fields is easy in Vespa (just a deploy to activate),
+add a new field for embeddings generated with the new model and populate this for all documents.
+This is easy using [partial updates](/en/partial-updates.html).
+Switch queries to using the new field, then update the documents by removing the old embedding value using partial updates,
+or deploy without the old field.
+
+Embedding fields are often generated from text fields,
+read [this guide](/en/binarizing-vectors.html) for inspiration and examples of managing fields and deployments.
 
 
 ## Garbage collection
@@ -369,8 +385,8 @@ Luckily, we can achieve the desired "stickiness" by extending the configuration 
 1. Add a region endpoint field to the configuration schema.
 2. In each region's configuration document, store the region's endpoint
    (each region has a separate configuration document, which can hold different values).
-4. When retrieving the version using the global endpoint, also obtain the region endpoint.
-5. Use the region endpoint in follow-up queries instead of the global endpoint.
+3. When retrieving the version using the global endpoint, also obtain the region endpoint.
+4. Use the region endpoint in follow-up queries instead of the global endpoint.
 
 
 

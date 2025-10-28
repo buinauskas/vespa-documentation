@@ -1,4 +1,4 @@
-// Copyright Vespa.ai. Licensed under the terms of the Apache 2.0 license. See LICENSE in the project root.
+// Copyright Vespa.ai. All rights reserved.
 
 contexts = {
     VIEW: "view",
@@ -13,6 +13,40 @@ var variables = new Map();
 var selected = null;
 var converter = new showdown.Converter();
 var context = contexts.VIEW;
+var currentTheme = localStorage.getItem('theme') || null; // Will be set based on system preference
+
+///////////////////////////////////////////////////////////////////////////////
+// Notifications
+///////////////////////////////////////////////////////////////////////////////
+
+function show_notification(message, type = 'info', duration = 3000) {
+    // Remove any existing notifications
+    d3.selectAll('.notification').remove();
+    
+    // Create notification element
+    var notification = d3.select('body')
+        .append('div')
+        .attr('class', 'notification ' + type)
+        .style('opacity', '0')
+        .html(message);
+    
+    // Fade in
+    notification
+        .transition()
+        .duration(300)
+        .style('opacity', '1');
+    
+    // Automatically fade out after duration
+    setTimeout(function() {
+        notification
+            .transition()
+            .duration(300)
+            .style('opacity', '0')
+            .on('end', function() {
+                notification.remove();
+            });
+    }, duration);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Operations and UI
@@ -106,51 +140,86 @@ var operations = {
             } else {
                 var data = result.get("result");
                 if (typeof data === "object") {
-                    var table = content.append("table");
-
-                    // expression
-                    if (result.has("e") && result.get("e").length > 0) {
-                        var row = table.append("tr")
-                        row.append("td").attr("class", "label").html("Expression");
-                        row.append("td").attr("class", "code").html(replace_html_code(result.get("e")));
-                    }
-
-                    // type
-                    if (result.has("type") && result.get("type").length > 0) {
-                        var row = table.append("tr")
-                        row.append("td").attr("class", "label").html("Type");
-                        row.append("td").attr("class", "code").html(replace_html_code(result.get("type")));
-                    }
-
-                    // value
-                    var row = table.append("tr");
-                    row.append("td").attr("class", "label").attr("style", "padding-top: 5px").html("Value");
-                    var cell = row.append("td");
+                    // Create a container for all tensor cards
+                    var tensorContainer = content.append("div").attr("class", "tensor-section");
+                    
+                    // Get the values we need
                     var value = data["value"];
                     if (data["type"] !== null && data["type"].includes("tensor")) {
                         value = data["value"]["literal"];
                     }
-                    cell.append("input").attr("value", value).attr("style", "width: 800px").attr("readonly","readonly");
-                    row.append("td").append("a").attr("href", "#").attr("class", "header").html(icon_clipboard_copy())
-                        .on("click", function(event) { copy_to_clipboard(value); event.stopPropagation(); event.preventDefault(); });
+                    
+                    // Expression row
+                    if (result.has("e") && result.get("e").length > 0) {
+                        var expressionRow = tensorContainer.append("div").attr("class", "tensor-row");
+                        expressionRow.append("div").attr("class", "tensor-label").html("Expression:");
+                        var expressionValue = expressionRow.append("div").attr("class", "tensor-value");
+                        expressionValue.html(replace_html_code(result.get("e")));
+                        
+                        // Add copy icon to the right of the field
+                        expressionRow.append("span")
+                            .attr("class", "tensor-clipboard copy-button-align")
+                            .html(icon_replicate())
+                            .on("click", function() { 
+                                copy_to_clipboard(result.get("e")); 
+                                event.stopPropagation(); 
+                            });
+                    }
+                    
+                    // Type row
+                    if (result.has("type") && result.get("type").length > 0) {
+                        var typeRow = tensorContainer.append("div").attr("class", "tensor-row");
+                        typeRow.append("div").attr("class", "tensor-label").html("Type:");
+                        var typeValue = typeRow.append("div").attr("class", "tensor-value");
+                        typeValue.html(replace_html_code(result.get("type")));
+                    }
+                    
+                    // Check if value should be shown based on the 'same' parameter in the response
+                    const shouldShowValue = data["same"] !== true;
+                    
+                    if (shouldShowValue) {
+                        // Value row - only show if different from expression
+                        var valueRow = tensorContainer.append("div").attr("class", "tensor-row");
+                        valueRow.append("div").attr("class", "tensor-label").html("Value:");
+                        var valueContent = valueRow.append("div").attr("class", "tensor-value tensor-value-single-line");
+                        
+                        // Add input with value
+                        valueContent.append("pre")
+                            .attr("style", "margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;")
+                            .text(value);
+                        
+                        // Add copy icon to the right of the field
+                        valueRow.append("span")
+                            .attr("class", "tensor-clipboard copy-button-align")
+                            .html(icon_replicate())
+                            .on("click", function(event) { 
+                                copy_to_clipboard(value); 
+                                event.stopPropagation(); 
+                            });
+                    }
 
-                    // graphical view of tensor
-                    row = table.append("tr");
-                    row.append("td").html("");
-                    cell = row.append("td");
-                    draw_table(cell, data);
-
-                    // steps
+                    // Table row - with empty space for label to align with other rows
+                    var tableRow = tensorContainer.append("div").attr("class", "tensor-row");
+                    tableRow.append("div").attr("class", "tensor-label").html("");
+                    var tableContent = tableRow.append("div").attr("style", "margin-top: 4px; width: 100%;");
+                    draw_table(tableContent, data);
+                    
+                    // Add execution trace section (previously steps)
                     const primitive = "Primitive representation:\n" + result.get("primitive");
                     const steps = "Steps:\n" + JSON.stringify(JSON.parse(result.get("steps")), null, 2);
-                    row = table.append("tr").attr("id", "steps_" + frame_index);
-                    if ( ! result.has("show_details") || result.get("show_details") == false) {
-                        row.attr("hidden", true);
+                    var debugContainer = content.append("div").attr("class", "debug-info-container").attr("id", "steps_" + frame_index);
+                    
+                    if (!result.has("show_details") || result.get("show_details") == false) {
+                        debugContainer.attr("hidden", true);
                     }
-                    row.append("td").attr("class", "label").html("Details");
-                    row.append("td").append("textarea").attr("rows", steps.split("\n").length + 2)
-                            .attr("class", "debug-info-text").text(primitive +"\n\n" + steps);
-
+                    
+                    var traceHeader = debugContainer.append("div").attr("class", "tensor-row");
+                    traceHeader.append("div").attr("class", "tensor-label").html("Execution Trace:");
+                    debugContainer.append("textarea")
+                        .attr("rows", steps.split("\n").length + 2)
+                        .attr("class", "debug-info-text")
+                        .attr("style", "width: 100%; margin-top: 4px;")
+                        .text(primitive + "\n\n" + steps);
                 } else {
                     content.html(data);
                 }
@@ -234,30 +303,64 @@ function add_save_cancel_field(root) {
     var row = root.select("table").append("tr");
     row.append("td").attr("class", "label");
     var cell = row.append("td");
-    cell.append("a").attr("href", "#").html(icon_check() + " Save and execute (ctrl + enter)")
+
+    var saveButton = cell.append("a").attr("href", "#").attr("class","header tooltip save-button")
+        .html(icon_check() + " Save and execute (ctrl + enter)" + '<span class="tooltip-text">Save changes and execute expression</span>')
         .on("click", function(event) { execute_selected(); event.preventDefault(); });
-    cell.append("a").attr("href", "#").attr("style","margin-left: 80px").html(icon_exit() + " Cancel (escape)")
+    var cancelButton = cell.append("a").attr("href", "#").attr("class","header tooltip cancel-button")
+        .attr("style","margin-left: 80px").html(icon_exit() + " Cancel (escape)" + '<span class="tooltip-text">Cancel editing</span>')
         .on("click", function(event) { document.activeElement.blur(); exit_edit_selected(); event.preventDefault(); });
+
+    // Check if we're in an expression context by looking for the expression textarea
+    var expressionTextarea = root.select(".expression_expression textarea");
+    if (!expressionTextarea.empty()) {
+        // disable save button if expression is empty (causes ugly errors from backend)
+        function updateButtonStates() {
+            var value = get_textarea_field_value(root, "expression_expression");
+            var isEmpty = value === "";
+
+            saveButton.classed("disabled", isEmpty);
+        }
+
+        // Initial check
+        updateButtonStates();
+
+        // Add event listener to check for changes
+        expressionTextarea.on("input", updateButtonStates);
+    }
 }
 
 function add_setup_ui_buttons(root) {
-    root.append("a").attr("href", "#").attr("class","header").html(icon_cancel())
+    root.append("a").attr("href", "#").attr("class","header tooltip").html(icon_cancel() + '<span class="tooltip-text">Cancel editing</span>')
         .on("click", function(event) { document.activeElement.blur(); exit_edit_selected(); event.preventDefault(); });
 }
 
+function addActionButton(root, iconFn, actionFn, frameIndex, actionName, tooltipText) {
+    root.append("a")
+        .attr("href", "#")
+        .attr("class", "header tooltip")
+        .html(iconFn() + `<span class="tooltip-text">${tooltipText}</span>`)
+        .on("click", function(event) {
+            // Only allow actions if not in edit mode
+            if (context !== contexts.EDIT) {
+                actionFn(frameIndex);
+            } else {
+                show_notification(`Cannot ${actionName} while in edit mode. Finish editing first.`, "warning");
+            }
+            event.stopPropagation();
+            event.preventDefault();
+        });
+}
+
 function add_result_ui_buttons(root, frame_index) {
-    root.append("a").attr("href", "#").attr("class","header").html(icon_edit())
-        .on("click", function(event) { edit_frame(frame_index); event.stopPropagation(); event.preventDefault(); });
-    root.append("a").attr("href", "#").attr("class","header").html(icon_up())
-        .on("click", function(event) { move_frame_up(frame_index); event.stopPropagation(); event.preventDefault(); });
-    root.append("a").attr("href", "#").attr("class","header").html(icon_down())
-        .on("click", function(event) { move_frame_down(frame_index); event.stopPropagation(); event.preventDefault(); });
-    root.append("a").attr("href", "#").attr("class","header").html(icon_remove())
-        .on("click", function(event) { remove_frame(frame_index); event.stopPropagation(); event.preventDefault(); });
+    addActionButton(root, icon_edit, edit_frame, frame_index, "edit a different frame", "Edit this frame");
+    addActionButton(root, icon_up, move_frame_up, frame_index, "move frames", "Move frame up");
+    addActionButton(root, icon_down, move_frame_down, frame_index, "move frames", "Move frame down");
+    addActionButton(root, icon_cross, remove_frame, frame_index, "remove frames", "Remove this frame");
 }
 
 function add_expression_result_ui_buttons(root, frame_index) {
-    root.append("a").attr("href", "#").attr("class","header header-space").html(icon_hierarchy())
+    root.append("a").attr("href", "#").attr("class","header header-space tooltip").html(icon_hierarchy() + '<span class="tooltip-text">Show execution trace</span>')
         .on("click", function(event) { show_details(frame_index); event.stopPropagation(); event.preventDefault(); });
 }
 
@@ -326,7 +429,8 @@ function draw_table(element, variable) {
 }
 
 function table_html(element, data, columns) {
-    var table = element.append("table"),
+    var table = element.append("table")
+        .attr("class", "tensor-table"),
         thead = table.append("thead"),
         tbody = table.append("tbody");
 
@@ -350,8 +454,7 @@ function table_html(element, data, columns) {
         })
         .enter()
         .append("td")
-            .classed("data", true)
-            .text(function(d) { return d.value; });
+        .text(function(d) { return d.value; });
 
     return table;
 }
@@ -369,16 +472,16 @@ function icon_down() {
     return '<svg height="21" viewBox="0 0 21 21" width="21" xmlns="http://www.w3.org/2000/svg"><g fill="none" fill-rule="evenodd" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" transform="translate(3 3)"><path d="m3.5 7.5 4 4 4-4"/><path d="m7.5.5v11"/><path d="m.5 14.5h14"/></g></svg>';
 }
 
-function icon_remove() {
-    return '<svg height="21" viewBox="0 0 21 21" width="21" xmlns="http://www.w3.org/2000/svg"><g fill="none" fill-rule="evenodd" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 7.5 6 6"/><path d="m13.5 7.5-6 6"/></g></svg>';
+function icon_cross() {
+    return '<svg height="21" viewBox="0 0 21 21" width="21" xmlns="http://www.w3.org/2000/svg"><g fill="none" fill-rule="evenodd" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" transform="translate(5 5)"><path d="m10.5 10.5-10-10z"/><path d="m10.5.5-10 10"/></g></svg>';
 }
 
 function icon_cancel() {
     return '<svg height="21" viewBox="0 0 21 21" width="21" xmlns="http://www.w3.org/2000/svg"><g fill="none" fill-rule="evenodd" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" transform="matrix(-1 0 0 1 18 3)"><path d="m10.595 10.5 2.905-3-2.905-3"/><path d="m13.5 7.5h-9"/><path d="m10.5.5-8 .00224609c-1.1043501.00087167-1.9994384.89621131-2 2.00056153v9.99438478c.0005616 1.1043502.8956499 1.9996898 2 2.0005615l8 .0022461"/></g></svg>';
 }
 
-function icon_clipboard_copy() {
-    return '<svg height="21" viewBox="0 0 21 21" width="21" xmlns="http://www.w3.org/2000/svg"><g fill="none" fill-rule="evenodd" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" transform="translate(4 3)"><path d="m6.5 11.5-3-3 3-3"/><path d="m3.5 8.5h11"/><path d="m12.5 6.5v-4.00491374c0-.51283735-.3860402-.93550867-.8833789-.99327378l-.1190802-.00672622-1.9975409.00491374m-6 0-1.99754087-.00492752c-.51283429-.00124584-.93645365.38375378-.99544161.88094891l-.00701752.11906329v10.99753792c.00061497.5520447.44795562.9996604 1 1.0006148l10 .0061554c.5128356.0008784.9357441-.3848611.993815-.8821612l.006185-.1172316v-2.5"/><path d="m4.5.5h4c.55228475 0 1 .44771525 1 1s-.44771525 1-1 1h-4c-.55228475 0-1-.44771525-1-1s.44771525-1 1-1z"/></g></svg>';
+function icon_replicate() {
+    return '<svg height="21" viewBox="0 0 21 21" width="21" xmlns="http://www.w3.org/2000/svg"><g fill="none" fill-rule="evenodd" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" transform="translate(3 3)"><path d="m11.5 9.5v-7c0-1.1045695-.8954305-2-2-2h-7c-1.1045695 0-2 .8954305-2 2v7c0 1.1045695.8954305 2 2 2h7c1.1045695 0 2-.8954305 2-2z"/><path d="m3.5 11.5v1c0 1.1045695.8954305 2 2 2h7c1.1045695 0 2-.8954305 2-2v-7c0-1.1045695-.8954305-2-2-2h-1"/></g></svg>';
 }
 
 function icon_check() {
@@ -394,7 +497,7 @@ function icon_comment() {
 }
 
 function icon_code() {
-    return '<svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 21 21"><g fill="none" fill-rule="evenodd" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" transform="translate(2 3)"><line x1="10.5" x2="6.5" y1=".5" y2="14.5"/><polyline points="7.328 2.672 7.328 8.328 1.672 8.328" transform="rotate(135 4.5 5.5)"/><polyline points="15.328 6.672 15.328 12.328 9.672 12.328" transform="scale(1 -1) rotate(-45 -10.435 0)"/></g></svg>';
+    return '<svg height="21" viewBox="0 0 21 21" width="21" xmlns="http://www.w3.org/2000/svg"><g fill="none" fill-rule="evenodd" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" transform="translate(2 3)"><line x1="10.5" x2="6.5" y1=".5" y2="14.5"/><polyline points="7.328 2.672 7.328 8.328 1.672 8.328" transform="rotate(135 4.5 5.5)"/><polyline points="15.328 6.672 15.328 12.328 9.672 12.328" transform="scale(1 -1) rotate(-45 -10.435 0)"/></g></svg>';
 }
 
 function icon_hierarchy() {
@@ -547,7 +650,12 @@ function update() {
     rows.exit().remove();
     var frames = rows.enter()
         .append("div")
-            .on("click", function() { select_frame(this); })
+            .on("click", function() { 
+                // Only allow frame selection when not in edit mode
+                if (context !== contexts.EDIT) {
+                    select_frame(this); 
+                }
+            })
             .attr("class", "frame");
     frames.append("div").attr("class", "frame-header").html("header");
     frames.append("div").attr("class", "frame-content").html("content");
@@ -610,7 +718,40 @@ function move_selected_down() {
     select_frame_by_index(frame_index+1);
 }
 
+// Check if an expression is empty (only contains whitespace)
+function is_expression_empty() {
+    // Only check in edit mode and for expressions
+    if (context !== contexts.EDIT) {
+        return false;
+    }
+
+    var frame = d3.select(selected);
+    if (!frame.empty()) {
+        var data = frame.data();
+        var setup = data[0][0]; // because of zip in update
+        var op = setup["op"];
+
+        // Only check for expressions
+        if (op === "e") {
+            try {
+                var value = get_textarea_field_value(frame, "expression_expression");
+                return value === "";
+            } catch (e) {
+                // If there's an error (e.g., textarea not found), return false
+                return false;
+            }
+        }
+    }
+    return false;
+}
+
 function execute_selected() {
+    // Don't execute if the expression is empty
+    if (is_expression_empty()) {
+        show_notification("Expression is empty. Please enter an expression first.", "warning");
+        return;
+    }
+
     var frame_index = find_selected_frame_index();
     var frame = d3.select(selected);
     var data = frame.data();
@@ -654,7 +795,7 @@ function execute_all() {
     }
     update();
 
-    d3.text("https://doc-search.vespa.oath.cloud/playground/eval", {
+    d3.text("https://api.search.vespa.ai/playground/eval", {
             method: "POST",
             body: "json=" + encodeURIComponent(JSON.stringify(expressions)),
             headers: { "Content-Type": "application/x-www-form-urlencoded" }
@@ -715,9 +856,12 @@ function find_selected_frame_index() {
 
 function find_frame_index(frame) {
     var result = null;
+    // If frame is a D3 selection, get the DOM element
+    var frameNode = frame.node ? frame.node() : frame;
+
     d3.select("#frames").selectAll(".frame")
         .each(function (d, i) {
-            if (this == frame) {
+            if (this == frameNode) {
                 result = i;
             }
         });
@@ -731,12 +875,16 @@ function is_element_entirely_visible(el) {
 }
 
 function select_frame(frame) {
+    // Don't allow selecting a different frame while in edit mode
+    if (context === contexts.EDIT) {
+        show_notification("Cannot select a different frame while in edit mode. Finish editing first.", "warning");
+        return;
+    }
+    
     if (selected == frame) {
         return;
     }
-    if (context === contexts.EDIT) {
-        exit_edit_selected();
-    }
+    
     if (selected != null) {
         selected.classList.remove("selected");
     }
@@ -750,6 +898,12 @@ function select_frame(frame) {
 }
 
 function select_frame_by_index(i) {
+    // Don't allow selecting a different frame while in edit mode
+    if (context === contexts.EDIT) {
+        show_notification("Cannot select a different frame while in edit mode. Finish editing first.", "warning");
+        return;
+    }
+    
     if (i >= num_frames()) {
         i = num_frames() - 1;
     }
@@ -786,7 +940,10 @@ function edit_selected() {
     var content = frame.select(".frame-content");
 
     operations[op]["setup_ui"](param, frame, header, content, find_frame_index(frame));
-
+    
+    // Add visual indicator for edit mode
+    frame.classed("edit-mode-active", true);
+    
     context = contexts.EDIT;
 }
 
@@ -812,11 +969,32 @@ function exit_edit_selected() {
     var op = setup["op"];
     var param = setup["p"];
 
+    // Check if this is a new frame that hasn't been executed yet
+    var isNewFrame = result.size === 0;
+    var isEmptyExpression = op === "e" && param["e"] === "";
+    var isEmptyComment = op === "c" && param["t"] === "";
+
+    if (isNewFrame && (isEmptyExpression || isEmptyComment)) {
+        // Nothing was entered, remove the frame
+        var frameIndex = find_frame_index(frame);
+        remove(frameIndex);
+        save_setup();
+        update();
+        // Remove visual indicator for edit mode
+        frame.classed("edit-mode-active", false);
+        context = contexts.VIEW;
+        select_frame_by_index(frameIndex-1);
+        return;
+    }
+
     var header = frame.select(".frame-header");
     var content = frame.select(".frame-content");
 
     operations[op]["result_ui"](result, frame, header, content, find_frame_index(frame));
-
+    
+    // Remove visual indicator for edit mode
+    frame.classed("edit-mode-active", false);
+    
     context = contexts.VIEW;
 }
 
@@ -845,7 +1023,12 @@ function copy_to_clipboard(text) {
     textarea.select();
     document.execCommand('copy');
     document.body.removeChild(textarea);
+    
+    // Show notification when copied to clipboard
+    show_notification("Copied to clipboard", "success", 2000);
 }
+
+
 
 function setup_keybinds() {
     var previous_keydown = { "key" : null, "ts" : 0 };
@@ -958,6 +1141,85 @@ function clear_examples() {
     d3.select("#examples-select").property("value", "");
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// Theme Toggle Functionality
+///////////////////////////////////////////////////////////////////////////////
+
+function setTheme(theme, saveToStorage = true) {
+    currentTheme = theme;
+    if (saveToStorage) {
+        localStorage.setItem('theme', theme);
+    }
+    document.documentElement.setAttribute('data-theme', theme);
+    
+    // Update the theme toggle icon
+    const themeToggle = document.getElementById('toggle-theme-cmd');
+    if (themeToggle) {
+        if (theme === 'dark') {
+            themeToggle.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="5"></circle>
+                    <line x1="12" y1="1" x2="12" y2="3"></line>
+                    <line x1="12" y1="21" x2="12" y2="23"></line>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                    <line x1="1" y1="12" x2="3" y2="12"></line>
+                    <line x1="21" y1="12" x2="23" y2="12"></line>
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                </svg>
+                <span class="tooltip-text">Toggle light mode</span>
+            `;
+        } else {
+            themeToggle.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+                </svg>
+                <span class="tooltip-text">Toggle dark mode</span>
+            `;
+        }
+    }
+}
+
+function toggleTheme() {
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme, true); // Save to storage when manually toggled
+    show_notification(`Switched to ${newTheme} mode`, 'info', 2000);
+}
+
+function setupThemeToggle() {
+    const themeToggle = document.getElementById('toggle-theme-cmd');
+    if (themeToggle) {
+        themeToggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            toggleTheme();
+        });
+    }
+    
+    // Check if theme is saved in localStorage
+    const savedTheme = localStorage.getItem('theme');
+    const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    if (savedTheme) {
+        // Use saved preference if it exists
+        currentTheme = savedTheme;
+    } else {
+        // Otherwise use system preference
+        currentTheme = prefersDarkMode ? 'dark' : 'light';
+    }
+    
+    // Apply the theme without saving to localStorage if using system preference
+    setTheme(currentTheme, savedTheme !== null);
+    
+    // Listen for system preference changes
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+        // Only change if user hasn't set a preference
+        if (!localStorage.getItem('theme')) {
+            setTheme(e.matches ? 'dark' : 'light', false); // Don't save to storage when following system
+        }
+    });
+}
+
 function main() {
     setup_commands();
     load_setup();
@@ -966,5 +1228,5 @@ function main() {
     select_frame_by_index(0);
     setup_keybinds();
     setup_examples();
+    setupThemeToggle();
 }
-

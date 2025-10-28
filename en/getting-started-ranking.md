@@ -1,8 +1,6 @@
 ---
-# Copyright Vespa.ai. Licensed under the terms of the Apache 2.0 license. See LICENSE in the project root.
+# Copyright Vespa.ai. All rights reserved.
 title: "Getting started with ranking"
-redirect_from:
-- /documentation/getting-started-ranking.html
 ---
 
 Learn how [ranking](ranking.html) works in Vespa by using the open [query API](query-api.html) of
@@ -50,7 +48,7 @@ Output the input values using [summary-features](reference/schema-reference.html
 In this experiment, we will use another rank function, still counting in-links but scoring older documents lower:
 
 
-<p><!-- depends on mathjax -->
+<p class="equation-container"><!-- depends on mathjax -->
     $$ num\_inlinks * {decay\_const}^{doc\_age\_seconds/3600} $$
 </p>
 
@@ -122,7 +120,7 @@ so let's add an [input.query()](reference/query-api-reference.html#ranking.featu
 
 <a class="querystring-x">yql=select * from doc where true;&ranking=term_count_similarity&input.query(q_term_count)=1000</a>
 
-<p><!-- depends on mathjax -->
+<p class="equation-container"><!-- depends on mathjax -->
     $$ 1 - \frac{fabs(attribute(term\_count) - query(q\_term\_count))}{1 + attribute(term\_count) + query(q\_term\_count)} $$
 </p>
 
@@ -304,7 +302,7 @@ rank-profile inlinks_twophase inherits inlinks_age {
 
 Note how using rank-profile `inherits` is a smart way to define functions once,
 then use in multiple rank-profiles.
-Read more about [schema inheritance](schemas.html#schema-inheritance).
+Read more about [schema inheritance](/en/inheritance-in-schemas.html).
 Here, `num_inlinks` and `rank_score` are defined in a rank profile we used earlier:
 
 <pre>

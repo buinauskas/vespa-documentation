@@ -155,6 +155,21 @@ button.section-searchbar {
     background: $color-brand-300 !important;
 }
 
+@media (max-width: 999px) {
+    .nav-item  {
+        a {
+            color: $color-brand-400;
+        }
+        .toggle-arrow {
+            margin-right: 1%;
+            font-size: 1.2rem;
+            height: 1rem;
+        }
+        
+    }
+    
+}
+
 .nav-item.section-searchbar {
     padding-top: 14px;
     z-index: 9;
@@ -194,6 +209,12 @@ button.section-searchbar {
     .section-cover--video-modal iframe#modal-video-frame {
         width: 840px;
         height: 473px;
+    }
+}
+/* Printed version styling */
+@media print {
+    #sidebar, .chip.chip-cloud, .chip.chip-oss, .d-menu-hamburger {
+        display: none;
     }
 }
 
@@ -337,6 +358,11 @@ pre > a {
 }
 // Override the underline in pre for this class
 pre.pre-config > a {
+    color: #303030;
+    &:hover {
+        //color: darken(#303030, 5%); // Darker on hover
+        filter: brightness(30%);
+    }
     text-decoration: none;
 }
 
@@ -380,6 +406,7 @@ pre > code {
 
 
 /* Sidebar */
+
 .collapse-parent {
     cursor: pointer;
 }
@@ -408,6 +435,67 @@ pre > code {
 
 .denali-theme-vespa-light .tabs.is-primary.is-vertical ul li {
     height: auto;
+    a {
+        color: $color-brand-400;
+    }
+    a:hover {
+        color: $color-brand-600;
+    }
+    
+}
+
+.denali-theme-vespa-light .tabs.is-primary.is-vertical ul li:hover {
+    background: rgba($color-brand-500, .2);
+    box-shadow: none;
+}
+.denali-theme-vespa-light .tabs.is-primary.is-vertical ul {
+    margin: 10px;
+    padding: 0;
+    
+}
+.denali-theme-vespa-light .tabs.is-primary.is-vertical ul.show  {
+    background: rgba($color-brand-500, .2);
+    border-radius: $border-radius-md;
+}
+
+.denali-theme-vespa-light .tabs.is-primary.is-vertical ul.show li.tabs__section-header {
+    margin-top: 0;
+    padding-top: 0;
+    background-color: $color-brand-400;
+    border-radius: $border-radius-sm;
+    a {
+        font-weight: bold;
+        color: white;
+    }
+}
+
+.denali-theme-vespa-light .tabs.is-primary.is-vertical ul ul.inner-ul {
+    padding: 0;
+}
+
+.denali-theme-vespa-light .tabs.is-primary.is-vertical ul.show ul.inner-ul.show li.tabs__section-sub {
+    margin-top: 0;
+    padding-top: 0;
+    background-color: $color-brand-500;
+    border-radius: $border-radius-sm;
+    a {
+        font-weight: bold;
+        color: white;
+    }
+}
+
+.denali-theme-vespa-light .tabs.is-primary.is-vertical ul.show ul.inner-ul.show {
+    margin: 0 14px;
+}
+
+.denali-theme-vespa-light .tabs.is-primary.is-vertical ul ul.inner-ul {
+    height: auto;
+    margin: 2px 16px;
+    
+}
+.denali-theme-vespa-light .tabs.is-primary.is-vertical ul li.tabs__section-header {
+    height: auto;
+    padding: 0;
 }
 
 .tabs {
@@ -416,6 +504,12 @@ pre > code {
     bottom: 0;
     left: 0;
     z-index: 3;
+}
+
+a.tab-link {
+    word-wrap: break-word;
+    white-space: normal;
+    font-weight: normal;
 }
 
 dt {
@@ -498,6 +592,39 @@ table {
 
 #selectedDropdownElement {
     background-color: $color-brand-300;
+}
+
+.suggestion-doc {
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.suggestion-term {
+    font-style: italic;
+}
+
+.suggestion-separator {
+    margin: 0.5em 0.83em;
+    border: 0;
+    border-top: 1px solid $color-brand-300;
+}
+
+.filepath {
+    -webkit-font-smoothing: auto;
+    overflow: auto;
+    page-break-inside: avoid;
+    display: block;
+    line-height: 1.42857143;
+    color: #d0d0d0;
+    word-break: break-all;
+    word-wrap: break-word;
+    border: 1px solid #404040;
+    white-space: pre-wrap;
+    background-color: #404040;
+    border-radius: 4px;
+    padding: 14px;
+    margin-bottom: 10px;
+    margin-top: 10px;
 }
 
 
@@ -610,4 +737,433 @@ blockquote {
     background-color: #e8e8e8;
     padding: 5px 5px 5px 5px;
     border-radius: 5px;
+}
+
+.chip {
+    padding: 0 2rem;
+    align-items: center;
+    border-radius: 6.25rem;
+    column-gap: 0.9375rem;
+    display: inline-flex;
+    justify-content: center;
+    margin: 20px 20px 0px 20px;
+
+    span {
+        font-weight: 600;
+        font-size: 1.6rem;
+        line-height: 4rem;
+    }
+}
+
+.chip-cloud {
+    background-color: #baedce;
+    color: #2e2f27;
+}
+
+.chip-oss {
+    background-color: #b7e2f1;
+    color: #2e2f27;
+}
+
+.tooltip {
+    position: relative;
+    display: inline-block;
+}
+
+.tooltiptext {
+     top: 120%;
+}
+
+.tooltip .tooltiptext {
+    visibility: hidden;
+    width: 300px;
+    background-color: #2e2f27;
+    color: white;
+    text-align: left;
+    padding: 5px;
+    border-radius: 6px;
+    position: absolute;
+    z-index: 1;
+    margin-left: 30px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    line-height: 2.5rem;
+}
+
+.tooltip:hover .tooltiptext {
+    visibility: visible;
+    opacity: 1;
+}
+
+
+/* General TOC styles */
+.toc ul {
+    overflow-y: auto;
+    list-style: none;
+    padding: 0;
+    margin: 20px 0;
+    padding: 10px 10px;
+    font-size: 16px;
+    color: #333;
+    top: 20 px;
+    right: 10px;
+    flex-direction: column;
+    flex-wrap: wrap;
+
+    max-height: 80vh;
+}
+.toc ul h2 {
+ color: $color-brand-400;
+}
+.toc ul li {
+  margin-bottom: 8px;
+  text-wrap: wrap;
+}
+
+/* Base link styles */
+.toc ul li a {
+    text-decoration: none;
+    color: $color-brand-400;
+    padding: 5px 10px;
+    border-radius: 5px;
+    display: block;
+    transition: all 0.3s ease;
+    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);
+  
+    white-space: normal; 
+    overflow: visible;
+    text-overflow: unset;
+    word-break: break-word; 
+}
+  
+  /* Widths per heading level */
+  .toc ul .toc-level-0 > a {
+    width: 240px;
+}
+  
+  .toc ul .toc-level-1 > a {
+    width: 220px;
+}
+  
+  .toc ul .toc-level-2 > a {
+    width: 200px;
+}
+
+/* Hover effects */
+.toc ul li a:hover {
+    background-color: $color-brand-400;
+    color: #fff;
+    white-space: normal;     
+    overflow: visible;
+    word-break: break-word;
+    
+}
+
+/* Neutral styling for TOC headings */
+.toc ul .toc-level-0 {
+    font-weight: bold;
+    font-size: 18px;
+}
+  
+  .toc ul .toc-level-1 {
+    font-weight: bold;
+    padding-left: 10px;
+    font-size: 16px;
+}
+  
+  .toc ul .toc-level-2 {
+    padding-left: 20px;
+    font-size: 14px;
+}
+
+/* FAQ-toc */
+.toc.faq-toc ul .toc-level-0 > a {
+    width: 100%;
+}
+.toc.faq-toc ul .toc-level-1 > a {
+    width: 90%;
+}
+    
+.toc.faq-toc ul .toc-level-2 > a {
+    width: 80%;
+}
+  
+/* Clean up link styling */
+.toc ul li a {
+    box-shadow: none;
+    text-decoration: none;
+    color: inherit;
+}
+
+
+/* Container overflow */
+
+.container-overflow {
+    overflow-x: hidden;
+}
+  
+.content-overflow {
+    word-break: break-word;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    max-width: 100%;
+}
+  
+/* Formulas scalling */
+
+.MathJax {
+    font-size: clamp(0.6em, 2vw, 0.8em); 
+    max-width: 100%;
+    height: auto;
+}
+
+.CtxtMenu_InfoContent {
+    font-size: 1.5em !important;
+    width: 100%;
+  }
+
+mjx-container[display="true"] > svg { // excluding display="inline" and others
+    width: 100%;
+    max-width: 100%; // limiting the width just so it won't get too big
+}
+  
+mjx-container[display="true"] { // excluding display="inline" and others
+    display: block;
+    width: 100%;
+}
+  
+.equation-container {
+    height: auto;
+    overflow-x: auto; /* Allow horizontal scroll if formula gets too wide */
+    display: block;
+    
+}
+
+figure > div:has(> .MathJax) {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    display: block;
+  }
+
+/* This excludes tables that are not inside other tables */
+table:not(table table) {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+}
+
+.table th, .table td {
+    min-width: fit-content;
+    word-break: normal;
+}
+.col{
+    min-width: 0;
+}
+
+/*Grouping Interface*/
+
+/* Container styling */
+.vespa-grouping-interface {
+    font-size: inherit;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+  }
+  
+  /* Query bar styling */
+
+  button.button.is-solid.is-small.run-button:hover {
+    color: $color-brand-300 !important;
+    background-color: $color-brand-400;
+  }
+  
+  #refresh-btn {
+    background-color: transparent;
+    padding: 0.5rem 0.75rem;
+    color: #555;
+    border: none
+  }
+  #refresh-btn span.d-icon {
+    font-size: 1.5em;
+  }
+  
+  #refresh-btn:hover {
+    color: $color-brand-400;
+  }
+
+  /* Table styling */
+  .grouping-table-container {
+    overflow-x: auto;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    display: grid;
+    text-align: center;
+    margin-top: 10px;
+    justify-content: center;
+    width: 100%;
+    grid-template-columns: 1fr;
+  }
+  .grouping-table-container.loading {
+    display: flex;
+    justify-content: center;
+  }
+
+  .editor-container {
+    max-width: 100%;
+    margin: auto;
+    margin-bottom: 2em !important;
+    background: white;
+    padding: 1rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  }
+  .grouping-table-container table.table {
+    min-width: 100%;
+    min-height: 100%;
+    display: table;
+  }
+  .grouping-table-container table.table table {
+    min-width: 100%;
+    display: table;
+    margin: 0;
+  }
+  .grouping-table-container table.table td:has(table.table) {
+    min-width: fit-content;
+    overflow-x: auto;
+    grid-template-columns: 1fr;
+    padding: 0;
+  }
+
+  .grouping-table-container table.table table td {
+    min-width: fit-content;
+    min-height: 100%;
+    word-break: normal;
+  }
+
+  textarea.yql-cell-textarea, .editor-container textarea {
+    width: 100%;
+    font-family: monospace;
+    font-size: 14px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    resize: vertical;
+  }
+
+  /* yql-cells(grouppung) */
+  .yql-cell {
+    margin: 1em 0;
+    padding: 1em;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background: #fafafa;
+  }
+  
+  .yql-cell-label {
+    font-weight: bold;
+    margin-bottom: 4px;
+  }
+  
+  .yql-cell-textarea {
+    width: 100%;
+    min-height: 80px;
+  }
+  
+  .yql-cell-button {
+    margin-top: 6px;
+  }
+
+  .yql-cell-button:hover {
+    background-color:$color-brand-300;
+    color: $color-brand-100;
+  }
+
+  #query-link-container {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 10px;
+    a {
+        font-size: 14px;
+        color: $color-brand-400;
+        &:hover {
+            color: $color-brand-300;
+        }
+    }
+  }
+
+/* View as Markdown button styles */
+.view-as-markdown-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background-color: #f6f8fa;
+    border: 1px solid #d1d5da;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #24292e;
+    text-decoration: none;
+    transition: all 0.2s ease-in-out;
+    white-space: nowrap;
+    line-height: 1;
+    min-height: 34px;
+    min-width: 34px; /* ensure square base for icon-only */
+    
+    &:hover {
+        background-color: #e1e4e8;
+        text-decoration: none;
+        color: #24292e;
+        border-color: #c6cbd1;
+    }
+    
+    &:focus {
+        outline: 2px solid #0969da;
+        outline-offset: -2px;
+    }
+    
+    svg {
+        width: 20px;
+        height: 20px;
+        flex-shrink: 0;
+        display: block;
+    }
+    
+    span {
+        font-size: 12px;
+    }
+}
+
+/* Icon-only (no text) variant */
+.view-as-markdown-button.icon-only {
+        padding: 6px; /* tighter since no label */
+        min-width: 34px;
+        svg { margin: 0; }
+}
+
+/* High contrast / dark-theme future-proofing */
+@media (prefers-contrast: more) {
+    .view-as-markdown-button {
+        border-color: #8a939b;
+    }
+    .view-as-markdown-button:focus { outline-width: 3px; }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .view-as-markdown-button {
+    padding: 4px 6px;
+    font-size: 12px;
+    min-height: 32px;
+    min-width: 32px;
+    svg { width: 18px; height: 18px; }
+    span { font-size: 11px; }
+    }
+}
+  
+.osano-cm-widget {
+  display: none;
 }

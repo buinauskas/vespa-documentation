@@ -1,8 +1,6 @@
 ---
-# Copyright Vespa.ai. Licensed under the terms of the Apache 2.0 license. See LICENSE in the project root.
+# Copyright Vespa.ai. All rights reserved.
 title: "YQL Query Language Reference"
-redirect_from:
-- /documentation/reference/query-language-reference.html
 ---
 
 <p>
@@ -31,8 +29,6 @@ select * from sources * where text contains "blues"
 {% include important.html content='There is no way to query for a field that is not set
 / equals <code>null</code> or <code>NaN</code>.
 Work around using a "magic" value (like MAXINT) that is not normally used in the documents.'%}
-<p>Since {% include version.html version="7.520.3" %}, YQL queries do not require a semicolon at the end.</p>
-
 
 
 <h2 id="select">select</h2>
@@ -268,6 +264,9 @@ where text contains phrase("st", "louis", "blues")
         </tr>
         </tbody>
       </table>
+      <p>
+	For multi-value fields, setting <a href="schema-reference.html#rank-element-gap">element-gap</a> for the field in the rank profile enables distance calculation between adjacent elements.
+      </p>
     </td>
   </tr>
 
@@ -294,6 +293,9 @@ where text contains phrase("st", "louis", "blues")
         </tr>
         </tbody>
       </table>
+      <p>
+	For multi-value fields, setting <a href="schema-reference.html#rank-element-gap">element-gap</a> for the field in the rank profile enables distance calculation between adjacent elements.
+      </p>
     </td>
   </tr>
 
@@ -474,7 +476,7 @@ where myStringAttribute contains ({prefixLength:1, maxEditDistance:2}fuzzy("para
       <p id="matches">
         Regular expression match is supported using
         <a href="https://en.wikibooks.org/wiki/Regular_Expressions/POSIX_Extended_Regular_Expressions">posix extended syntax</a>,
-        with the limitation that it is <strong>case insensitive</strong>.
+        with the limitation that it is <strong>case-insensitive</strong>.
       </p>
       <p>Example matching both <code>madonna</code>, <code>madona</code> and with any number of <code>n</code>s:</p>
 <pre>
@@ -495,29 +497,29 @@ where attribute_field matches "mado[n]+a"
     <td>
       <p id="userinput">
         <em>userInput()</em> is a robust way of mixing user input and a formal query.
-        It allows controlling whether the user input is to be stemmed, lowercased, etc.,
-        but it also allows for controlling whether it should be treated as a raw string,
-        whether it should simply be segmented or parsed as a query.
+          The argument is an unprocessed text string from a user or LLM, which is parsed into
+          query items as controlled by annotations:
       </p>
 <pre>
-yql=select * from sources * where userInput(@animal)&amp;animal=panda
+yql=select * from sources * where userInput('some text')
 </pre>
-      <p>
-        Here, the userInput() function will access the query property "animal",
-          and parse the property value as a <a href="query-language-reference.html#weakand"><em>weakAnd</em></a> query, resulting in the following expression:
-      </p>
+
+<p>The argument can be given as a reference using "@parameterName":</p>
 <pre>
-select * from sources * where weakAnd(default contains "panda")
+yql=select * from sources * where userInput(@text)&amp;text=some text
 </pre>
-      <p>
-        Find a full example in the <a href="../query-api.html#input-examples">query API</a> guide.
-      </p>
-      <p>
-        Instead of <a href="#parameter-substitution">parameter substitution</a>,
-        the <em>userInput()</em> function also accepts raw strings as arguments,
-        but this would obviously not be suited for parametrizing the query from a query profile.
-        It is mostly intended as test feature.
-      </p>
+
+<p>Both of these will result in the query</p>
+
+<pre>
+select * from sources * where weakAnd(default contains "some", default contains "text")
+</pre>
+
+<p>The default behavior may be overridden by annotations:</p>
+<pre>
+yql=select * from sources * where ({grammar.syntax:'none',grammar.tokenization:'linguistics',grammar.composite:'near',distance:3}userInput('some text'))
+</pre>
+
       <table class="table">
         <thead>
         <tr>
@@ -529,12 +531,15 @@ select * from sources * where weakAnd(default contains "panda")
         <tr>
           <td><a href="#grammar">grammar</a></td>
           <td>
+            <p>
             How to parse the user input.
             For any value of <code>grammar</code> other than <code>raw</code> or <code>segment</code>,
             only the following annotations are applied:
+            </p>
             <ul>
               <li><a href="#defaultindex">defaultIndex</a></li>
               <li><a href="#targethits">targetHits</a></li> (for weakAnd)
+              <li><a href="#distance">distance</a></li> (for near/oNear)
               <li><a href="#ranked">ranked</a></li>
               <li><a href="#filter">filter</a></li>
               <li><a href="#stem">stem</a></li>
@@ -542,9 +547,11 @@ select * from sources * where weakAnd(default contains "panda")
               <li><a href="#accentdrop">accentDrop</a></li>
               <li><a href="#usepositiondata">usePositionData</a></li>
             </ul>
-            E.g. if annotating <code>userInput</code> with <code>phrase</code>,
+            <p>E.g. if annotating <code>userInput</code> with <code>phrase</code>,
             a <code>filter</code> annotation will have effect,
-            but not <code>language</code>.
+            but not <code>language</code>.</p>
+            <p>See <a href="query-api-reference.html#model.type.isYqlDefault">isYqlDefault</a> on setting a default grammar
+            in a request/query profile.</p>
           </td>
         </tr>
         <tr>
@@ -566,6 +573,7 @@ select * from sources * where weakAnd(default contains "panda")
         In addition, other annotations, like <a href="#stem">stem</a> or <a href="#ranked">ranked</a>,
         will take effect as normal.
       </p>
+      <p>More examples can be found in the <a href="../query-api.html#input-examples">query API</a> guide.</p>
     </td>
   </tr>
 
@@ -614,12 +622,14 @@ $ vespa query 'select * from sources * where vendor contains "brick and mortar" 
 <pre>
 where rank(a contains "A", b contains "B", c contains "C")
 </pre>
-<p>It's also useful in hybrid search use cases. See <a href="https://blog.vespa.ai/redefining-hybrid-search-possibilities-with-vespa/">blog post</a> 
-  for usage examples. For example, retrieve using the <a href="#nearestneighbor">nearestNeighbor</a> query operator
-  as the first argument and have matching features calculated for the the other arguments. </p>
-  <pre>
+      <p>
+      It's also useful in hybrid search use cases. See <a href="https://blog.vespa.ai/redefining-hybrid-search-possibilities-with-vespa/">blog post</a>
+      for usage examples. For example, retrieve using the <a href="#nearestneighbor">nearestNeighbor</a> query operator
+      as the first argument and have matching features calculated for the other arguments.
+      </p>
+<pre>
 where rank(nearestNeighbor(field, queryVector), a contains "A", b contains "B", c contains "C")
-  </pre>
+</pre>
     </td>
   </tr>
 
@@ -636,23 +646,34 @@ where rank(nearestNeighbor(field, queryVector), a contains "A", b contains "B", 
 where integer_field in (10, 20, 30)
 where string_field in ('germany', 'france', 'norway')
 </pre>
-Where <code>string_field</code> is a field with <code>match:word</code>. 
-There is no <a href="/en/linguistics.html">linguistic</a> processing like tokenization or stemming 
+Where <code>string_field</code> is a field with <code>match:word</code>.
+There is no <a href="/en/linguistics.html">linguistic</a> processing like tokenization or stemming
 of the string values used in the <em>in</em> operator except lowercasing. See string <a href="schema-reference.html#match">match</a>.
 <pre>
 field string_field type string {
-    indexing: summary | index # or attribute 
+    indexing: summary | index # or attribute
     match: word
     rank:filter
-    attribute: fast-search # if attribute 
+    attribute: fast-search # if attribute
   }
 </pre>
 <p>Using the <em>in</em> operator against string fields with <code>match:text</code> will cause recall issues because
   the field contents will be tokenized during indexing while the <em>in</em> operator does not tokenize the values.</p>
       <p>
         The argument before <em>in</em> is the name of the field or <a href="schema-reference.html#fieldset">fieldset</a> to search.
-        The argument after <em>in</em> is a comma-separated list of values, enclosed in parenthesis.
+        The argument after <em>in</em> is a comma-separated list of values, enclosed in parentheses.
         String values must be single or double-quoted if passed inline in YQL
+      </p>
+      <p>
+        For multi-value fields (like arrays), the <em>in</em> operator works by checking if any element in the array matches any of the values in the set.
+        This is similar to SQL's IN operator but more streamlined for array comparisons. Example:
+      </p>
+<pre>
+where integer_array_field in (10, 20, 30)
+</pre>
+      <p>
+        If integer_array_field = [5, 10, 15], it will match because 10 is in the array.
+        Similarly, if integer_array_field = [20, 25, 30], it will match because both 20 and 30 are in the array.
       </p>
       <p>
         For faster query parsing use <a href="#parameter-substitution">parameter substitution</a>
@@ -667,14 +688,13 @@ where string_field in (@string_values)&amp;string_values=germany,france,norway
         The <em>in</em> operator acts as a single term in the query tree,
         and does not provide any match information for text ranking features.
       </p>
-      <p>
-        For a discussion of usage and examples refer to:
+      <p>For a discussion of usage and examples refer to:</p>
         <ul>
           <li><a href="../multivalue-query-operators.html#in-example">multivalue query operators</a></li>
           <li><a href="../performance/feature-tuning.html#multi-lookup-set-filtering">multi-lookup set filtering</a></li>
           <li><a href="https://github.com/vespa-engine/system-test/tree/master/tests/search/in_operator">in operator system test</a></li>
         </ul>
-      </p>
+
       <table class="table">
         <thead></thead><tbody>
       <tr>
@@ -1004,6 +1024,7 @@ where ({targetHits: 7}weakAnd(a contains "A", b contains "B"))
       <p id="geolocation">
         <code>geoLocation</code> matches a <a href="schema-reference.html#position">position</a>
         inside a geographical circle, specified as latitude, longitude, and a maximum distance (radius).
+        See also <a href="#geoboundingbox">geoBoundingBox</a>.
         Example:
       </p>
 <pre>
@@ -1015,11 +1036,12 @@ where geoLocation(myfieldname, 63.5, 10.5, "200 km")
         So a document with a "myfieldname" position in Trondheim, Norway at
         N63°25'47;E10°23'36 would match.
         The first parameter is the name of the attribute field.
-        The second parameter is the longitude (positive for north, negative for south).
-        The third parameter is the latitude (positive for east, negative for west).
+        The second parameter is the latitude (positive for north, negative for south).
+        The third parameter is the longitude (positive for east, negative for west).
         The fourth parameter must be a string specifying the radius and its units,
-        where the supported units include "km", "m" (for meters), "miles", and "deg" for degrees
-        (so "deg" gives radius the same units as latitude).
+        where the supported units/suffixes include "km", "m" (abbr. for meters), "miles", "mi" (abbr. for miles),
+        "deg" (abbr. for degrees) and "d" (contextual abbr. for degrees).
+        The "deg" / "d" unit / suffix gives radius the same units as latitude.
         Any negative number for radius (e.g. "-1 m") is interpreted as an "infinite" radius,
         letting any geographical position at all match the geoLocation operator.
       </p>
@@ -1061,7 +1083,7 @@ field myfieldname type array&lt;position&gt; {
         <td>position attribute (single-valued or array).</td>
       </tr><tr>
         <th>Query parameters</th>
-        <td>Field name, longitude, latitude, radius.</td>
+        <td>Field name, latitude, longitude, radius.</td>
       </tr><tr>
         <th>Matching</th>
         <td>Returns documents inside the given geo circle.</td>
@@ -1073,6 +1095,74 @@ field myfieldname type array&lt;position&gt; {
           and <a href="rank-features.html#distance(name)">distance</a> documentation.</td>
       </tr><tr>
         <th style="white-space:nowrap;">Java Query Item</th>
+        <td><a href="https://javadoc.io/doc/com.yahoo.vespa/container-search/latest/com/yahoo/prelude/query/GeoLocationItem.html">GeoLocationItem</a></td>
+      </tr>
+      </tbody>
+      </table>
+    </td>
+  </tr>
+
+  <tr>
+    <th>geoBoundingBox</th>
+    <td>
+      <p id="geoboundingbox">
+        <code>geoBoundingBox</code> requires a <a href="schema-reference.html#position">position</a>
+        to be inside a geographical rectangle; specified as 4 numbers (in degrees).
+        The 4 numbers must be in a specific order:
+        south-western corner (minimum latitude, minimum longitude)
+        followed by
+        north-eastern corner (maximum latitude, maximum longitude).
+        Examples:
+      </p>
+<pre>
+where geoBoundingBox(myfieldname, 63.25, 10.01, 63.45, 10.61)
+where geoBoundingBox(myfieldname, -23.12, -43.85, -22.59, -42.89)
+</pre>
+      <p>
+        In the first example we search for documents inside a rectangular map view around
+        Trondheim, Norway.
+        So a document with a "myfieldname" position at
+        <a href="https://www.google.com/maps/place/63%C2%B025'50.0%22N+10%C2%B023'42.0%22E">
+          63&deg;25&apos;50&quot;N 10&deg;23&apos;42&quot;E
+        </a>
+        would match.
+        The second example surrounds
+        <a href="https://www.google.com/maps/place/22%C2%B059'13.0%22S+43%C2%B012'10.0%22W">Rio de Janeiro</a>, Brazil.
+      </p>
+      <p>
+        <ul>
+          <li>The first parameter is the name of the attribute field.</li>
+          <li>The 2nd parameter is the minimum (southern) latitude (positive for north, negative for south).</li>
+          <li>The 3rd parameter is the minimum (western) longitude (positive for east, negative for west).</li>
+          <li>The 4th parameter is the maximum (northern) latitude (positive for north, negative for south).</li>
+          <li>The 5th parameter is the maximum (eastern) longitude (positive for east, negative for west).</li>
+        </ul>
+      </p>
+      <p>
+        See the <a href="#geolocation">geoLocation</a> operator for more details about positions.
+        Note that there is no ranking contribution from this operator; if you want to get
+        the distance to the center of the box, you need an additional <code>geoLocation</code> item
+        with that point.
+      </p>
+      <p>
+        Properties:
+      </p>
+      <table class="table">
+        <thead></thead><tbody>
+      <tr>
+        <th>Field type</th>
+        <td>position attribute (single-valued or array).</td>
+      </tr><tr>
+        <th>Query parameters</th>
+        <td>Field name, southern, western, northern, eastern limits.</td>
+      </tr><tr>
+        <th>Matching</th>
+        <td>Returns documents inside the given geo bounding box.</td>
+      </tr><tr>
+        <th>Ranking</th>
+        <td>None.</td>
+      </tr><tr>
+        <th>Java Query Item</th>
         <td><a href="https://javadoc.io/doc/com.yahoo.vespa/container-search/latest/com/yahoo/prelude/query/GeoLocationItem.html">GeoLocationItem</a></td>
       </tr>
       </tbody>
@@ -1099,8 +1189,8 @@ field myfieldname type array&lt;position&gt; {
           <li>Single vector per document: Tensor type with one indexed dimension.
             Example: <code>tensor&lt;float&gt;(x[3])</code></li>
 
-          <li>Multiple vectors per document: Tensor type with one mapped and one indexed dimension.
-            Example: <code>tensor&lt;float&gt;(m{},x[3])</code></li>
+          <li>Multiple vectors per document: Tensor type with one or more mapped dimensions and one indexed dimension.
+            Examples: <code>tensor&lt;float&gt;(m{},x[3])</code>, <code>tensor&lt;float&gt;(m{},n{},x[3])</code></li>
         </ul>
       <p>
         Euclidean distance is used as the default
@@ -1224,7 +1314,7 @@ field doc_vector type tensor&lt;float&gt;(x[3]) {
         <thead></thead><tbody>
       <tr>
         <th>Field type</th>
-        <td>Tensor attribute with one indexed dimension of size N or with one mapped and one indexed dimension.</td>
+        <td>Tensor attribute with one indexed dimension of size N or with one or more mapped dimensions and one indexed dimension of size N.</td>
       </tr><tr>
         <th>Query model</th>
         <td>Tensor with one indexed dimension of size N.</td>
@@ -1747,12 +1837,18 @@ where myUrlField.hostname contains ({startAnchor: true}uri("vespa.ai"))
       <a href="query-api-reference.html#model.type">model.type</a> argument in the query API.</td>
     <td>
       <p id="grammar">
-      How to parse <a href="#userinput">userInput</a>.
-      <code>raw</code> will treat the user input as a string to be matched without any processing,
-      <code>segment</code> will do a first pass through the linguistic libraries,
-      while the rest of the values will treat the string as a query to be parsed.
-      If query parsing fails, an error message will be returned.
-      <a href="../query-api.html#input-examples">Example</a>.
+        How to parse <a href="#userinput">userInput</a>.
+        <code>raw</code> will treat the user input as a string to be matched without any processing,
+        <code>segment</code> will do a first pass through the linguistic libraries,
+        while the rest of the values will treat the string as a query to be parsed.
+      <p>
+      <p>
+        The individual model.type settings can also be set, using
+        <code>grammar.composite</code>, <code>grammar.tokenization</code>, and <code>grammar.syntax</code>,
+        refer to the <a href="query-api-reference.html#model.type">model.type</a> documentation.
+      </p>
+      <p>
+        See also <a href="../query-api.html#input-examples">userInput examples</a>.
       </p>
     </td>
   </tr>
@@ -2047,7 +2143,7 @@ where title contains ({weight:200}"heads")
   Consider the following query:
 </p>
 <pre>
-select * from sources * where ({stem: false}(foo contains "a" and bar contains "b")) or foo contains {stem: false}"c"
+select * from sources * where ({stem: false}(foo contains "a" and bar contains "b")) or foo contains ({stem: false}"c")
 </pre>
 <p>
   The "stem" annotation controls whether a given term should be stemmed if its

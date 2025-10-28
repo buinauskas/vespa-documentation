@@ -1,54 +1,144 @@
-# Copyright Vespa.ai. Licensed under the terms of the Apache 2.0 license. See LICENSE in the project root.
+# Copyright Vespa.ai. All rights reserved.
 
 # This data is used to build the left sidebar and the table of contents
 # Use sidebar_exclude: true to exclude the doc from sidebar, keeping it in the table of contents
-# Table of contents should include all pages
+# The table of contents should include all pages
 
 docs:
+  - title: Vespa basics
+    url: /en/deploy-an-application.html
+    documents:
+      - page: Deploy an application
+        url: /en/deploy-an-application.html
+      - page: Vespa applications
+        url: /en/applications.html
+      - page: Schemas
+        url: /en/schemas.html
+      - page: Writing
+        url: /en/writing.html
+      - page: Querying
+        url: /en/querying.html
+      - page: Ranking
+        url: /en/ranking.html
+
   - title: Getting started
+    url: /en/getting-started.html
     documents:
       - page: Vespa Overview
         url: /en/overview.html
       - page: Features
         url: /en/features.html
-      - page: Getting Started
-        url: /en/getting-started.html
       - page: Vespa CLI
         url: /en/vespa-cli.html
+        sub:
+          - page: vespa
+            url: /en/reference/vespa-cli/vespa.html
+          - page: vespa activate
+            url: /en/reference/vespa-cli/vespa_activate.html
+          - page: vespa auth
+            url: /en/reference/vespa-cli/vespa_auth.html
+          - page: vespa clone
+            url: /en/reference/vespa-cli/vespa_clone.html
+          - page: vespa config
+            url: /en/reference/vespa-cli/vespa_config.html
+          - page: vespa curl
+            url: /en/reference/vespa-cli/vespa_curl.html
+          - page: vespa deploy
+            url: /en/reference/vespa-cli/vespa_deploy.html
+          - page: vespa destroy
+            url: /en/reference/vespa-cli/vespa_destroy.html
+          - page: vespa document
+            url: /en/reference/vespa-cli/vespa_document.html
+          - page: vespa feed
+            url: /en/reference/vespa-cli/vespa_feed.html
+          - page: vespa fetch
+            url: /en/reference/vespa-cli/vespa_fetch.html
+          - page: vespa inspect
+            url: /en/reference/vespa-cli/vespa_inspect.html
+          - page: vespa log
+            url: /en/reference/vespa-cli/vespa_log.html
+          - page: vespa prepare
+            url: /en/reference/vespa-cli/vespa_prepare.html
+          - page: vespa prod
+            url: /en/reference/vespa-cli/vespa_prod.html
+          - page: vespa query
+            url: /en/reference/vespa-cli/vespa_query.html
+          - page: vespa status
+            url: /en/reference/vespa-cli/vespa_status.html
+          - page: vespa test
+            url: /en/reference/vespa-cli/vespa_test.html
+          - page: vespa version
+            url: /en/reference/vespa-cli/vespa_version.html
+          - page: vespa visit
+            url: /en/reference/vespa-cli/vespa_visit.html
       - page: Getting Started with Ranking
         url: /en/getting-started-ranking.html
-      - page: Tutorials
-        url: /en/tutorials/
       - page: Vespa API and Interfaces
         url: /en/api.html
       - page: "Use case: Shopping"
         url: /en/use-case-shopping.html
         sidebar_exclude: true
-      - page: "Use case: Text-Image Search"
-        url: /en/use-case-text-image-search.html
-        sidebar_exclude: true
       - page: "Frequently Asked Questions - FAQ"
         url: /en/faq.html
+      - page: Tenants, Apps and Instances
+        url: /en/cloud/tenant-apps-instances.html
       - page: Glossary
         url: /en/glossary.html
 
-  - title: Schemas and documents
+  - title: Tutorials and quick starts
+    url: /en/tutorials/
     documents:
-      - page: Documents
-        url: /en/documents.html
-      - page: Schemas
-        url: /en/schemas.html
+      - page: "News Tutorials"
+        url: /en/tutorials/news-1-deploy-an-application.html
+        sub:
+          - page: "News 1: Getting Started"
+            url: /en/tutorials/news-1-deploy-an-application.html
+          - page: "News 2: Application Packages, Feeding, Query"
+            url: /en/tutorials/news-2-basic-feeding-and-query.html
+          - page: "News 3: Sorting, Grouping and Ranking"
+            url: /en/tutorials/news-3-searching.html
+          - page: "News 4: Embeddings"
+            url: /en/tutorials/news-4-embeddings.html
+          - page: "News 5: Partial Updates, ANNs, Filtering"
+            url: /en/tutorials/news-5-recommendation.html
+          - page: "News 6: Custom Searchers, Document Processors"
+            url: /en/tutorials/news-6-recommendation-with-searchers.html
+          - page: "News 7: Parent-Child, Tensor Ranking"
+            url: /en/tutorials/news-7-recommendation-with-parent-child.html
+      - page: Models Hot Swap
+        url: /en/tutorials/models-hot-swap.html
+      - page: Text Search
+        url: /en/tutorials/text-search.html
+      - page: Hybrid Text Search
+        url: /en/tutorials/hybrid-search.html
+      - page: Text Search ML
+        url: /en/tutorials/text-search-ml.html
+      - page: "RAG Blueprint"
+        url: /en/tutorials/rag-blueprint.html
+      - page: Quick Start
+        url: /en/deploy-an-application-local.html
+      - page: Quick Start Java
+        url: /en/deploy-an-application-local-java.html
+
+  - title: Schemas and documents
+    url: /en/documents.html
+    documents:
       - page: Parent/Child
         url: /en/parent-child.html
-      - page: Annotations API
-        url: /en/annotations.html
       - page: Concrete document types
         url: /en/concrete-documents.html
+      - page: Exposing schema information
+        url: /en/exposing-schema-information.html
+      - page: Reindexing
+        url: /en/operations/reindexing.html
+      - page: Structs
+        url: /en/structs.html
+      - page: Inheritance in schemas
+        url: /en/inheritance-in-schemas.html
 
   - title: Reading and writing
+    url: /en/reads-and-writes.html
     documents:
-      - page: Reads and Writes
-        url: /en/reads-and-writes.html
       - page: /document/v1
         url: /en/document-v1-api-guide.html
       - page: Visiting
@@ -61,11 +151,14 @@ docs:
         url: /en/document-api-guide.html
       - page: Partial Updates
         url: /en/partial-updates.html
+      - page: Batch delete
+        url: /en/operations/batch-delete.html
+      - page: Feed block
+        url: /en/operations/feed-block.html
 
   - title: Querying
+    url: /en/query-api.html
     documents:
-      - page: Query API
-        url: /en/query-api.html
       - page: Vespa Query Language
         url: /en/query-language.html
       - page: Grouping Information in Results
@@ -98,11 +191,8 @@ docs:
         url: /en/result-diversity.html
 
   - title: Ranking and ML models
+    url: /en/ranking-expressions-features.html
     documents:
-      - page: Ranking Introduction
-        url: /en/ranking.html
-      - page: Rank Features and Expressions
-        url: /en/ranking-expressions-features.html
       - page: Embedding
         url: /en/embedding.html
       - page: Multivalue Query Operators
@@ -125,61 +215,32 @@ docs:
         url: /en/xgboost.html
       - page: Ranking With LightGBM Models
         url: /en/lightgbm.html
-      - page: Stateless model evaluation
+      - page: Stateless Model Evaluation
         url: /en/stateless-model-evaluation.html
       - page: Ranking With BM25
         url: /en/reference/bm25.html
+      - page: Significance Model
+        url: /en/significance.html
       - page: Ranking With nativeRank
         url: /en/nativerank.html
       - page: Accelerated OR search using the WAND algorithm
         url: /en/using-wand-with-vespa.html
+      - page: Model Hub
+        url: /en/cloud/model-hub.html
 
   - title: Linguistics and text processing
+    url: /en/linguistics.html
     documents:
-      - page: Linguistics in Vespa
-        url: /en/linguistics.html
       - page: Query Rewriting
         url: /en/query-rewriting.html
-      - page: Embedding text
-        url: /en/embedding.html
       - page: Troubleshooting character encoding
         url: /en/troubleshooting-encoding.html
       - page: Lucene Linguistics
         url: /en/lucene-linguistics.html
 
-  - title: Tutorials and quick starts
-    documents:
-      - page: "News 1: Getting Started"
-        url: /en/tutorials/news-1-getting-started.html
-      - page: "News 2: Application Packages, Feeding, Query"
-        url: /en/tutorials/news-2-basic-feeding-and-query.html
-      - page: "News 3: Sorting, Grouping and Ranking"
-        url: /en/tutorials/news-3-searching.html
-      - page: "News 4: Embeddings"
-        url: /en/tutorials/news-4-embeddings.html
-      - page: "News 5: Partial Updates, ANNs, Filtering"
-        url: /en/tutorials/news-5-recommendation.html
-      - page: "News 6: Custom Searchers, Document Processors"
-        url: /en/tutorials/news-6-recommendation-with-searchers.html
-      - page: "News 7: Parent-Child, Tensor Ranking"
-        url: /en/tutorials/news-7-recommendation-with-parent-child.html
-      - page: Models Hot Swap
-        url: /en/tutorials/models-hot-swap.html
-      - page: Text Search
-        url: /en/tutorials/text-search.html
-      - page: Text Search ML
-        url: /en/tutorials/text-search-ml.html
-      - page: Quick Start
-        url: /en/vespa-quick-start.html
-      - page: Quick Start Java
-        url: /en/vespa-quick-start-java.html
-
   - title: Applications and components
+    url: /en/developer-guide.html
     documents:
-      - page: Developer Guide
-        url: /en/developer-guide.html
-      - page: Application Packages
-        url: /en/application-packages.html
       - page: Unit Testing
         url: /en/unit-testing.html
       - page: Testing
@@ -188,6 +249,10 @@ docs:
         url: /en/reference/testing.html
       - page: Testing Reference Java
         url: /en/reference/testing-java.html
+      - page: Deployment
+        url: /en/deployment.html
+      - page: The config system
+        url: /en/config-system.html
       - page: Java Serving Container
         url: /en/jdisc/
       - page: Container Components
@@ -222,15 +287,24 @@ docs:
         url: /en/reference/developing-server-providers.html
       - page: Server Tutorial
         url: /en/jdisc/server-tutorial.html
-      - page: LLMs in Vespa
-        url: /en/llms-in-vespa.html
+
+  - title: GenAI and RAG
+    url: /en/llms-in-vespa.html
+    documents:
+      - page: Working with chunks
+        url: /en/working-with-chunks.html
+      - page: Local LLMs in Vespa
+        url: /en/llms-local.html
+      - page: External LLMs in Vespa
+        url: /en/llms-external.html
       - page: RAG in Vespa
         url: /en/llms-rag.html
+      - page: Document enrichment with LLMs
+        url: /en/llms-document-enrichment.html
 
-  - title: Content clusters
+  - title: Content and elasticity
+    url: /en/elasticity.html
     documents:
-      - page: Elasticity
-        url: /en/elasticity.html
       - page: Proton
         url: /en/proton.html
       - page: Content Nodes and States
@@ -243,9 +317,8 @@ docs:
         url: /en/content/buckets.html
 
   - title: Performance and tuning
+    url: /en/performance/
     documents:
-      - page: Performance intro
-        url: /en/performance/
       - page: Practical performance guide
         url: /en/performance/practical-search-performance-guide.html
       - page: Serving Sizing Guide
@@ -254,30 +327,97 @@ docs:
         url: /en/performance/sizing-feeding.html
       - page: Sizing Examples
         url: /en/performance/sizing-examples.html
+      - page: Binarizing Vectors
+        url: /en/binarizing-vectors.html
       - page: Document Attributes
         url: /en/attributes.html
       - page: Benchmarking
         url: /en/performance/vespa-benchmarking.html
+      - page: Benchmarking with Vespa Cloud
+        url: /en/cloud/benchmarking.html
+      - page: Memory Visualizer
+        url: /en/cloud/memory-visualizer.html
       - page: Profiling
         url: /en/performance/profiling.html
       - page: Container Tuning
         url: /en/performance/container-tuning.html
       - page: Rate-Limiting Search Requests
         url: /en/performance/rate-limiting-searcher.html
-      - page: HTTP/2
-        url: /en/performance/http2.html
       - page: Graceful Query Coverage Degradation
         url: /en/graceful-degradation.html
       - page: Caches
         url: /en/performance/caches-in-vespa.html
       - page: HTTP Performance Testing
         url: /en/performance/container-http.html
+      - page: HTTP Best Practices
+        url: /en/cloud/http-best-practices.html
+      - page: HTTP/2
+        url: /en/performance/http2.html
       - page: Feature Tuning
         url: /en/performance/feature-tuning.html
       - page: Valgrind
         url: /en/performance/valgrind.html
 
-  - title: Operations
+  - title: Operations - Vespa Cloud
+    url: /en/cloud/automated-deployments.html
+    documents:
+      - page: Node resources
+        url: /en/cloud/node-resources.html
+      - page: Autoscaling
+        url: /en/cloud/autoscaling.html
+      - page: Topology and resizing
+        url: /en/cloud/topology-and-resizing.html
+      - page: "Enclave - bring your own cloud"
+        url: /en/cloud/enclave/enclave.html
+        sub:
+          - page: AWS getting started
+            url: /en/cloud/enclave/aws-deploy-an-application.html
+          - page: AWS architecture
+            url: /en/cloud/enclave/aws-architecture.html
+          - page: GCP getting started
+            url: /en/cloud/enclave/gcp-deploy-an-application.html
+          - page: GCP architecture
+            url: /en/cloud/enclave/gcp-architecture.html
+          - page: Log archive
+            url: /en/cloud/enclave/archive.html
+          - page: Operations
+            url: /en/cloud/enclave/operations.html
+      - page: Production deployment
+        url: /en/cloud/production-deployment.html
+      - page: Migrating to Vespa Cloud
+        url: /en/cloud/migrating-to-cloud.html
+      - page: Migrating from ElasticSearch to Vespa
+        url: /en/cloud/migrating-from-elastic-search-to-vespa.html
+      - page: Data management and backup
+        url: /en/cloud/data-management-and-backup.html
+      - page: Cloning applications and data
+        url: /en/cloud/cloning-applications-and-data.html
+      - page: Index bootstrap
+        url: /en/cloud/index-bootstrap.html
+      - page: Monitoring
+        url: /en/cloud/monitoring.html
+      - page: Notifications
+        url: /en/cloud/notifications.html
+      - page: Deleting applications
+        url: /en/cloud/deleting-applications.html
+      - page: Environments
+        url: /en/cloud/environments.html
+      - page: Zones
+        url: /en/cloud/zones.html
+      - page: Private endpoints
+        url: /en/cloud/private-endpoints.html
+      - page: Routing
+        url: /en/cloud/routing.html
+      - page: Artifact Archive
+        url: /en/cloud/archive-guide.html
+        sub:
+          - page: Archive Guide AWS
+            url: /en/cloud/archive-guide-aws.html
+          - page: Archive Guide GCP
+            url: /en/cloud/archive-guide-gcp.html
+
+  - title: Operations - Self-managed
+    url: /en/operations-selfhosted/admin-procedures.html
     documents:
       - page: Metrics
         url: /en/operations/metrics.html
@@ -285,21 +425,8 @@ docs:
         url: /en/reference/logs.html
       - page: Access Logging
         url: /en/access-logging.html
-      - page: Batch delete
-        url: /en/operations/batch-delete.html
-      - page: Feed block
-        url: /en/operations/feed-block.html
-      - page: Reindexing
-        url: /en/operations/reindexing.html
-      - page: Tools
-        url: /en/operations/tools.html
-
-  - title: Operations - selfhosted
-    documents:
       - page: Multinode Systems
         url: /en/operations-selfhosted/multinode-systems.html
-      - page: Administrative Procedures
-        url: /en/operations-selfhosted/admin-procedures.html
       - page: Files, Processes, Ports, Environment
         url: /en/operations-selfhosted/files-processes-and-ports.html
       - page: Node Setup
@@ -326,6 +453,8 @@ docs:
         url: /en/operations-selfhosted/vespa-cmdline-tools.html
       - page: Docker Containers GPU setup
         url: /en/operations-selfhosted/vespa-gpu-container.html
+      - page: CPU Support
+        url: /en/operations-selfhosted/cpu-support.html
       - page: Service Location Broker
         url: /en/operations-selfhosted/slobrok.html
       - page: Change from attribute to index procedure
@@ -337,28 +466,44 @@ docs:
       - page: Routing
         url: /en/operations-selfhosted/routing.html
 
-  - title: Configuration reference
+  - title: Security
+    url: /en/cloud/security/security.html
     documents:
-      - page: Application Package Reference
-        url: /en/reference/application-packages-reference.html
+      - page: Security Guide
+        url: /en/cloud/security/guide.html
+      - page: Secret Store
+        url: /en/cloud/security/secret-store.html
+      - page: Cloudflare Workers
+        url: /en/cloud/security/cloudflare-workers.html
+      - page: Security Whitepaper
+        url: /en/cloud/security/whitepaper.html
+
+  - title: Configuration reference
+    url: /en/reference/application-packages-reference.html
+    documents:
       - page: Schema Reference
         url: /en/reference/schema-reference.html
       - page: services.xml
         url: /en/reference/services.html
-      - page: services.xml - admin
-        url: /en/reference/services-admin.html
-      - page: services.xml - container
-        url: /en/reference/services-container.html
-      - page: services.xml - content
-        url: /en/reference/services-content.html
-      - page: services.xml - docproc
-        url: /en/reference/services-docproc.html
-      - page: services.xml - http
-        url: /en/reference/services-http.html
-      - page: services.xml - processing
-        url: /en/reference/services-processing.html
-      - page: services.xml - search
-        url: /en/reference/services-search.html
+        sub:
+          - page: services.xml - admin
+            url: /en/reference/services-admin.html
+          - page: services.xml - container
+            url: /en/reference/services-container.html
+          - page: services.xml - content
+            url: /en/reference/services-content.html
+          - page: services.xml - docproc
+            url: /en/reference/services-docproc.html
+          - page: services.xml - http
+            url: /en/reference/services-http.html
+          - page: services.xml - processing
+            url: /en/reference/services-processing.html
+          - page: services.xml - search
+            url: /en/reference/services-search.html
+      - page: deployment.xml
+        url: /en/reference/deployment.html
+      - page: Deployment variants
+        url: /en/reference/deployment-variants.html
       - page: hosts.xml
         url: /en/reference/hosts.html
       - page: validation-overrides.xml
@@ -391,9 +536,8 @@ docs:
         url: /en/reference/prometheus-v1.html
 
   - title: Ranking and ML models reference
+    url: /en/reference/ranking-expressions.html
     documents:
-      - page: Ranking Expressions
-        url: /en/reference/ranking-expressions.html
       - page: Tensor Evaluation Reference
         url: /en/reference/tensor.html
       - page: nativeRank Reference
@@ -412,9 +556,8 @@ docs:
         url: /en/reference/embedding-reference.html
 
   - title: Queries and results reference
+    url: /en/reference/query-api-reference.html
     documents:
-      - page: Query API Reference
-        url: /en/reference/query-api-reference.html
       - page: Query Language Reference
         url: /en/reference/query-language-reference.html
       - page: Simple Query Language Reference
@@ -440,10 +583,14 @@ docs:
       - page: Low-level request handler APIs
         url: /en/reference/low-level-request-handlers.html
 
-  - title: Document API reference
+  - title: GenAI and RAG reference
     documents:
-      - page: /document/v1 API reference
-        url: /en/reference/document-v1-api-reference.html
+      - page: Chunking Reference
+        url: /en/reference/chunking-reference.html
+
+  - title: Document API reference
+    url: /en/reference/document-v1-api-reference.html
+    documents:
       - page: Document JSON Format
         url: /en/reference/document-json-format.html
       - page: Document Field Path Syntax
@@ -452,11 +599,11 @@ docs:
         url: /en/reference/document-select-language.html
 
   - title: Component reference
+    url: /en/reference/component-reference.html
     documents:
-      - page: Component Reference
-        url: /en/reference/component-reference.html
 
   - title: Metrics reference
+    url: /en/reference/metrics-reference.html
     documents:
       - page: Vespa Metric Set Reference
         url: /en/reference/vespa-set-metrics-reference.html
@@ -486,6 +633,7 @@ docs:
         url: /en/reference/unit-metrics-reference.html
 
   - title: Utilities and libraries
+    url: /en/operations/tools.html
     documents:
       - page: Predicate Search Java Library
         url: /en/boolean-library.html
@@ -493,18 +641,15 @@ docs:
         url: "https://pyvespa.readthedocs.io/en/latest/getting-started-pyvespa.html"
 
   - title: Contributing
+    url: /en/contributing.html
     documents:
       - page: Build and install Vespa
         url: /en/build-install-vespa.html
-      - page: Contributing to Vespa
-        url: /en/contributing.html
       - page: Documentation Conventions
         url: /en/introduction-to-documentation.html
-      - page: Config API
-        url: /en/contributing/configapi-dev.html
-      - page: Developing Config Model Plugins
-        url: /en/contributing/cloudconfig-model-plugins.html
-      - page: Developing with the Java Cloud Config API
-        url: /en/contributing/configapi-dev-java.html
-      - page: Using the C++ Cloud config API
-        url: /en/contributing/configapi-dev-cpp.html
+  
+  - title: Getting help from LLMs
+    url: /en/llm-help.html
+    documents:
+      - page: llms.txt
+        url: /llms.txt

@@ -1,8 +1,6 @@
 ---
-# Copyright Vespa.ai. Licensed under the terms of the Apache 2.0 license. See LICENSE in the project root.
+# Copyright Vespa.ai. All rights reserved.
 title: "Simple Query Language Reference"
-redirect_from:
-- /documentation/reference/simple-query-language-reference.html
 ---
 
 <p>
@@ -11,47 +9,8 @@ to issue more complex queries than a list of tokens.
 It is a heuristic, non-structured language,
 which attempts to do something probably-useful with any input given.
 It is combined with the structured <a href="../query-language.html">YQL</a>
-by using the <a href="query-language-reference.html#userquery">userQuery</a> operator. Types:
+by using the <a href="query-language-reference.html#userquery">userQuery</a> operator.
 </p>
-<table class="table">
-  <tr>
-    <th>all</th>
-    <td>Creates an AND: All the words of the query must match.</td>
-  </tr>
-  <tr>
-    <th>any</th>
-    <td>Creates an OR: At least one of the words of the query must match.</td>
-  </tr>
-  <tr>
-    <th>weakAnd</th>
-    <td>Default. Creates a <a href="../using-wand-with-vespa.html#weakand">WeakAnd</a>: Like "any", but with performance more like "all".</td>
-  </tr>
-  <tr>
-    <th>tokenize</th>
-    <td>Simply splits the text into word tokens and assembles them into a
-      <a href="../using-wand-with-vespa.html#weakand">WeakAnd</a> item.
-      No characters, such as minus or quote signs carry any semantics in this mode, any non-searchable character
-      is simply ignored. This is useful when querying using text not explicitly written as a search query.</td>
-  </tr>
-  <tr>
-    <th>web</th>
-    <td>Like the <em>all</em> type, with the following differences:
-    <ul>
-      <li><code>+</code> in front of a term means "search for this term as-is"</li>
-      <li><code>term1 OR term2</code> (capital OR)
-          means match either term1 or term2</li>
-      <li>The special syntax for url-matching used in the other
-          languages is not supported</li>
-    </ul></td>
-  </tr>
-  <tr>
-    <th>phrase</th>
-    <td>The words of the query is considered a phrase,
-        the words must match in the given order.
-        Colon, plus and so on is ignored.</td>
-  </tr>
-</table>
-
 
 <h3 id="simple-syntax">Simple Query Syntax</h3>
 <pre>
@@ -70,7 +29,7 @@ NumTerm    ::= NUM | '&lt;' NUM | '&gt;' NUM | '[' NUM? ';' NUM? ';' HITLIMIT? '
 PrefixTerm    ::= WORD '*'
 SubstringTerm ::= '*' WORD '*'
 SuffixTerm    ::= '*' WORD
-SameElement   ::= '{' Field ( SPACE Field )* '}'
+SameElement   ::= '{' Field CoreTerm ( SPACE Field CoreTerm )* '}'
 </pre>
 
 
@@ -257,7 +216,7 @@ all documents <em>not</em> containing <em>a</em>.
 Vespa, however, will return the error message <em>Null query</em>.
 All the following examples are of type <em>all</em>.
 </p><p>
-Get all documents with the word <em>word</em>,
+Get all documents with the term <em>word</em>,
 having <em>microsoft</em> but not <em>bug</em> in the title:
 <pre>
 word title:microsoft -title:bug

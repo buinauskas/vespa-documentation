@@ -1,28 +1,47 @@
 ---
-# Copyright Vespa.ai. Licensed under the terms of the Apache 2.0 license. See LICENSE in the project root.
-title: "Select Reference"
-redirect_from:
-- /documentation/reference/select-reference.html
+# Copyright Vespa.ai. All rights reserved.
+title: "Select Query Reference"
 ---
 
 
-This document describes what the `SELECT` parameter is and gives a few examples on how to use it. Refer to the [Query API](../query-api.html) for how to write POST queries.
+This document describes what the `select` parameter is and gives a few examples on how to use it. Refer to the [Query API](../query-api.html) for how to execute queries with POST.
 
-The parameter is in JSON, and can be used with POST queries. The `SELECT`-parameter is equivalent with YQL, and can be used instead, but not together. Nor can it be used together with the `QUERY`-parameter.
+The query has JSON syntax, and can be used with queries that are executed with HTTP POST. The `select` parameter is equivalent with YQL, and can be used instead of, but not together with YQL. Nor can it be used together with the `query` parameter.
 
 ## Structure
 
 
-```
+```json
 "select" : {
   "where" : {...},
   "grouping" : {...}
 }
 ```
 
+Example query searching for the term 'country' in the field 'title':
+
+```json
+{
+  "select": {
+    "where": {
+      "contains": ["title", "country"]
+    }
+  }
+}
+```
+
+This query can be executed with `curl`:
+
+```bash
+curl -H "Content-Type: application/json" \
+    --data "{ 'select': { 'where': { 'contains': ['default', 'country'] } } }" \
+    http://localhost:8080/search/
+```
+
+
 ### Where
 
-In difference from the sql-like syntax in [YQL](../query-language.html), the *where* queries is written in a tree syntax. By combining YQLs functions and arguments, queries equivalent with YQL can be written in JSON.
+Unlike the sql-like syntax in [YQL](../query-language.html), the *where* queries are written in a tree syntax. By combining YQLs functions and arguments, queries equivalent with YQL can be written in JSON.
 
 #### Formal structure
 
@@ -46,16 +65,16 @@ FUNCTION : [
 ]
 ```
 
-YQL is a regular language and is parsed into a query-tree when parsed in Vespa. That tree can also be built
-with the `WHERE`-parameter in JSON. 
+YQL is a regular language and is parsed into a query tree when parsed in Vespa. That tree can also be built
+with the `where` parameter in JSON.
 
-Let's take a look at this yql: `select * from sources * where default contains foo and rank(a contains "A", b contains "B")`, which will create the following query-tree:
+Let's take a look at this yql: `select * from sources * where default contains foo and rank(a contains "A", b contains "B")`, which will create the following query tree:
 
 <img src="/assets/img/querytree.svg" width="737px" height="auto" alt="Example query tree" />
 
-The tree above can be written with the where-parameter, like this:
+The tree above can be written with the 'where' parameter, like this:
 
-```
+```json
 {
   "and" :  [
     { "contains" : ["default", "foo"] },
@@ -66,13 +85,13 @@ The tree above can be written with the where-parameter, like this:
   ]
 }
 ```
-Which is equivalent with the YQL.
+which is equivalent with the YQL.
 
 
 
 ### Grouping
 
-One or more [grouping statements](../grouping.html), can be set as a JSON array in the `grouping` field.
+One or more [grouping statements](../grouping.html) can be set as a JSON array in the `grouping` field.
 Each array item is a grouping statement represented as JSON where
 - Each grouping function is represented by a JSON object where the name of the function is the field
   name and the value is the function content.
@@ -88,7 +107,7 @@ Grouping statement:
 ```
 equivalent JSON `grouping`-argument:
 
-```
+```json
 "grouping" : [
   {
     "all" : {
@@ -110,7 +129,7 @@ all(group(predefined(foo, bucket[1, 2>, bucket[3, 4>)))
 ```
 equivalent JSON `grouping`-argument:
 
-```
+```json
 "grouping" : [ 
   { 
     "all" : { 
@@ -123,10 +142,33 @@ equivalent JSON `grouping`-argument:
 ```
 
 
-### A complete example
+### Complete examples
 
+Query everything (`"where": true`), create one bucket for all documents (`"group": "\"all\""`) and output overall price statistics (`"avg(price)"` and `"sum(price)"`):
 
+```json
+{
+  "select": {
+    "where": true,
+    "grouping": [
+      {
+        "all": {
+          "group": "\"all\"",
+          "each": {
+            "output": [
+              "avg(price)",
+              "sum(price)"
+            ]
+          }
+        }
+      }
+    ]
+  }
+}
 ```
+
+A more complex example:
+```json
 {
   "select" : {
     "where" : {
@@ -139,7 +181,7 @@ equivalent JSON `grouping`-argument:
      },
     "grouping" : [ {
       "all" : {
-	      "group" : "time.year(a)",
+        "group" : "time.year(a)",
           "each" : { "output" : "count()" }
       }		
     } ]
@@ -162,7 +204,7 @@ YQL: `where title contains 'a'`.
 
 Format of this in JSON:
 
-```
+```json
 "where" : {
   "contains" : [ "title", "a" ]
 }
@@ -173,9 +215,9 @@ YQL: `where date >= 10`.
 
 Format of this in JSON:
 
-*Introducing the range-parameter:*
+*Introducing the range parameter:*
 
-```
+```json
 "range" : [
   "date",
   { ">=" : 10}
@@ -199,7 +241,7 @@ YQL: `where range(field, 0, 500)`.
 
 Format of this in JSON:
 
-```
+```json
 "where" : {
   "range" : [
     "field",
@@ -210,11 +252,11 @@ Format of this in JSON:
 
 
 ##### OR
-YQL: `where title contains 'a' or title contains "b"`.
+YQL: `where title contains 'a' or title contains 'b'`.
 
 Format of this in JSON:
 
-```
+```json
 "where" : {
   "or" : [
     { "contains" : [ "title", "a" ] },
@@ -225,30 +267,30 @@ Format of this in JSON:
 
 
 ##### AND
-YQL: `where title contains 'a' and title contains "b"`.
+YQL: `where title contains 'a' and title contains 'b'`.
 
 Format of this in JSON:
 
-```
+```json
 "where" : {
   "and" : [
-    {"contains" : [ "title" : "a" ] },
-  {"contains" : [ "title" : "b" ] }
+    {"contains" : [ "title", "a" ] },
+  {"contains" : [ "title", "b" ] }
   ]
 }
 ```
 
 
 ##### AND NOT
-YQL: `where title contains "a" and !(title contains "b")`.
+YQL: `where title contains 'a' and !(title contains 'b')`.
 
 Format of this in JSON:
 
-```
+```json
 "where" : {
   "and_not" : [
-    {"contains" : [ "title" : "a" ] },
-    {"contains" : [ "title" : "b" ] }
+    {"contains" : [ "title", "a" ] },
+    {"contains" : [ "title", "b" ] }
   ]
 }
 ```
@@ -272,7 +314,7 @@ YQL: `where title matches "madonna"`.
 
 Format of this in JSON:
 
-```
+```json
 "where" : {
   "matches" : [
     "title",
@@ -284,7 +326,7 @@ Another example:
 
 YQL: `where title matches "mado[n]+a"`
 
-```
+```json
 "where" : {
   "matches" : [
     "title",
@@ -300,11 +342,9 @@ YQL: `where text contains phrase("st", "louis", "blues")`.
 
 Format of this in JSON:
 
-```
+```json
 "where" : {
-  "contains" : [ 
-    "phrase" : ["st", "louis", "blues"]
-  ]
+  "contains" : [ "text", { "phrase" : ["st", "louis", "blues"] } ]
 }
 ```
 
@@ -314,7 +354,7 @@ YQL: `where description contains ([ {"distance": 100} ]onear("a", "b"))`.
 
 Format of this in JSON:
 
-```
+```json
 "where" : {
   "contains" : [ 
     "description",
@@ -333,7 +373,7 @@ YQL: `where persons contains sameElement(first_name contains 'Joe', last_name co
 
 Format of this in JSON:
 
-```
+```json
 "where" : {
   "contains" : [
     "persons",
@@ -357,7 +397,7 @@ YQL: `where fieldName contains equiv("A","B")`.
 
 Format of this in JSON:
 
-```
+```json
 "where" : {
   "contains" : [
     "fieldName",
@@ -372,7 +412,7 @@ YQL: `where rank(a contains "A", b contains "B")`.
 
 Format of this in JSON:
 
-```
+```json
 "where" : {
   "rank" : [
     { "contains" : [ "a", "A" ] },
@@ -390,7 +430,7 @@ YQL: `where wand(description, {"a":1, "b":2}`.
 
 Format of this in JSON:
 
-```
+```json
 "where" : {
   "wand" : [ "description", {"a" : 1, "b":2} ]
 }
@@ -402,7 +442,7 @@ YQL: `where [ {"scoreThreshold": 13, "targetHits": 7} ]wand(description, {"a":1,
 
 Format of this in JSON:
 
-```
+```json
 "where" : {
   "wand" : {
     "children" : [ "description", {"a" : 1, "b":2} ],
@@ -416,7 +456,7 @@ YQL: `where dotProduct(description, {"a":1, "b":2})`.
 
 Format of this in JSON:
 
-```
+```json
 "where" : {
   "dotProduct" : [ "description", {"a" : 1, "b":2} ]
 }
@@ -427,7 +467,7 @@ YQL: `where weightedSet(description, {"a":1, "b":2})`.
 
 Format of this in JSON:
 
-```
+```json
 "where" : {
   "weightedSet" : [ "description", {"a" : 1, "b":2} ]
 }
@@ -438,7 +478,7 @@ YQL: `where {scoreThreshold: 41, "targetHits": 7}weakAnd(a contains "A", b conta
 
 Format of this in JSON:
 
-```
+```json
 "where" : {
   "weakAnd" : {
     "children" : [ { "contains" : ["a", "A"] }, { "contains" : ["b", "B"] } ],

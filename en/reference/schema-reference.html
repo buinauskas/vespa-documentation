@@ -1,12 +1,10 @@
 ---
-# Copyright Vespa.ai. Licensed under the terms of the Apache 2.0 license. See LICENSE in the project root.
+# Copyright Vespa.ai. All rights reserved.
 title: "Schema Reference"
-redirect_from:
-- /documentation/reference/schema-reference.html
 ---
 
 <p>
-  This documents the syntax and content of schemas, document types and fields.
+  This reference documents the syntax and content of schemas, document types, and fields.
   This is a reference, see <a href="../schemas.html">schemas</a> for an overview and examples.
 </p>
 
@@ -18,7 +16,7 @@ Throughout this document, a string in square brackets represents some argument.
 The whole string, including the brackets, is replaced by a concrete string in a schema.
 </p><p>
 Constructs in schemas have a regular syntax.
-Each element starts by the element <em>identifier</em>,
+Each element starts with the element <em>identifier</em>,
 possibly followed by the <em>name</em> of this particular occurrence of the element,
 possibly followed by a space-separated list of interleaved <em>attribute names</em>
 and <em>attribute values</em>, possibly followed by the <em>element body</em>.
@@ -33,7 +31,7 @@ Thus, one will find elements of these varieties:
 }</code><br/>
 </p>
 <p>
-  One-line element values starts by a colon and ends by newline.
+  One-line element values start with a colon and end with a newline.
 </p>
 <p>
 Multiline values (for fields supporting them) are any block of text enclosed in curly brackets.
@@ -44,7 +42,7 @@ Comments may be inserted anywhere and start with a hash (#).
 <p>
 Names are <em>identifiers</em>, they must match <code>["a"-"z","A"-"Z", "_"]["a"-"z","A"-"Z","0"-"9","_"]*</code>.
 </p>
-<p>A schema-file is not sensitive to indentation.</p>
+<p>A schema file is not sensitive to indentation.</p>
 
 
 
@@ -59,7 +57,6 @@ Names are <em>identifiers</em>, they must match <code>["a"-"z","A"-"Z", "_"]["a"
             <a href="#field">field</a>
                 <a href="#match">match</a>
         <a href="#field">field</a><span style="display:none"> <!-- Keep field types here for the doc search direct display, hide for clarity -->
-            <a href="#annotationreference">annotationreference&lt;annotationtype&gt;</a>
             <a href="#array">array&lt;type&gt;</a>
             <a href="#bool">bool</a>
             <a href="#byte">byte</a>
@@ -128,10 +125,12 @@ Names are <em>identifiers</em>, they must match <code>["a"-"z","A"-"Z", "_"]["a"
         <a href="#globalphase-rank">global-phase</a>
             <a href="#expression">expression</a>
             <a href="#globalphase-rerank-count">rerank-count</a>
+            <a href="#globalphase-rank-score-drop-limit">rank-score-drop-limit</a>
         <a href="#function-rank">function [name] </a>
         <a href="#inputs">inputs</a>
         <a href="#constants">constants</a>
         <a href="#onnx-model">onnx-model</a>
+        <a href="#significance">significance</a>
         <a href="#rank-properties">rank-properties</a>
         <a href="#match-features">match-features</a>
         <a href="#mutate">mutate</a>
@@ -148,16 +147,24 @@ Names are <em>identifiers</em>, they must match <code>["a"-"z","A"-"Z", "_"]["a"
         <a href="#termwise-limit">termwise-limit</a>
         <a href="#post-filter-threshold">post-filter-threshold</a>
         <a href="#approximate-threshold">approximate-threshold</a>
+        <a href="#filter-first-threshold">filter-first-threshold</a>
+        <a href="#filter-first-exploration">filter-first-exploration</a>
+        <a href="#exploration-slack">exploration-slack</a>
         <a href="#target-hits-max-adjustment-factor">target-hits-max-adjustment-factor</a>
+        <a href="#filter-threshold">filter-threshold</a>
         <a href="#rank">rank</a>
+	    <a href="#rank-filter-threshold">filter-threshold</a>
+	    <a href="#rank-element-gap">element-gap</a>
         <a href="#rank-type">rank-type</a>
+        <a href="#weakand">weakand</a>
+            <a href="#weakand-stopword-limit">stopword-limit</a>
+            <a href="#weakand-adjust-target">adjust-target</a>
+            <a href="#weakand-allow-drop-all">allow-drop-all</a>
     <a href="#constant">constant</a>
     <a href="#onnx-model">onnx-model</a>
     <a href="#stemming">stemming</a>
     <a href="#document-summary">document-summary</a>
         <a href="#summary">summary</a>
-    <a href="#annotation">annotation</a>
-        <a href="#field">field</a>
     <a href="#import-field">import field</a>
     <a href="#raw-as-base64-in-summary">raw-as-base64-in-summary</a>
 </pre>
@@ -177,7 +184,7 @@ schema [name] inherits [name] {
 
 <p>The <code>inherits</code> attribute is optional.
 If a schema is inherited, this schema will include all the constructs of it as if they
-were defined in this (except the parent document type).
+were defined in this schema (except the parent document type).
 The document type in this must declare that it inherits the document type of the parent schema.
 </p>
 
@@ -226,17 +233,12 @@ The document type in this must declare that it inherits the document type of the
 
 <tr><td><a href="#raw-as-base64-in-summary">raw-as-base64-in-summary</a></td>
   <td>Zero or one</td>
-  <td>Base64 encode raw fields in summary rather than using an escaped string. Default is true.</td>
+  <td>Base64 encode raw fields in summary rather than using an escaped string. The default is true.</td>
 </tr>
 
 <tr><td style="white-space: nowrap"><a href="#document-summary">document-summary</a></td>
   <td>Zero to many</td>
   <td>An explicitly defined document summary</td>
-</tr>
-
-<tr><td><a href="#annotation">annotation</a></td>
-  <td>Zero to many</td>
-  <td>Defines an annotation type</td>
 </tr>
 
 <tr><td><a href="#import-field">import field</a></td>
@@ -259,7 +261,7 @@ document [name] inherits [name-list] {
 }
 </pre>
 <p>
-  The document name is optional, it defaults to the containing <code>schema</code>
+  The document name is optional; it defaults to the containing <code>schema</code>
  element's name. If there is no containing <code>schema</code> element, the document name is required. If the document with a name is defined inside a schema, the document name must match the <code>schema</code> element's name. The reference to <em>document type</em> in the documentation refers to the document name defined here.
 </p>
 <p>
@@ -324,12 +326,13 @@ struct [name] {
 
 <h2 id="field">field</h2>
 <p>
-Contained in <a href="#schema">schema</a>,
+Contained in
+<a href="#schema">schema</a>,
 <a href="#document">document</a>,
-<a href="#struct">struct</a> or
-<a href="#annotation">annotation</a>.
+or
+<a href="#struct">struct</a>.
 Defines a named value with a type and (optionally) how this field
-should be stored, indexed, searched, presented and how it should influence ranking.
+should be stored, indexed, searched, presented, and how it should influence ranking.
 </p>
 <pre>
 field [name] type [type-name] {
@@ -359,7 +362,7 @@ or other places in the schema file. Reserved names are:
   <li>tokenize</li>
 </ul>
 <p>
-Other names not to use include any words that start with a number or includes special characters.
+Other names not to use include any words that start with a number or include special characters.
 </p><p>
 The <em>type</em> attribute is mandatory - supported types:
 </p>
@@ -371,40 +374,6 @@ The <em>type</em> attribute is mandatory - supported types:
   </tr>
   </thead>
   <tbody>
-
-  <tr><th>annotationreference</th>
-    <td>
-      <p id="annotationreference">
-        Use to define a field (inside <a href="#annotation">annotation</a>, or inside e.g. a
-        struct used by a field in an <a href="#annotation">annotation</a>) with a reference to another annotation.
-        Should only be used for fields declared inside <a href="#annotation">annotation</a>,
-        or as a base type by the use of any of the compound types listed above, inside <a href="#annotation">annotation</a>.
-        To define a such a field, you must first create an <a href="#annotation">annotation type</a>.
-        The <a href="#annotation">struct</a> must be defined inside the schema.
-        To declare an annotationreference field in an annotation, use the annotation name to identify the field type:
-      </p>
-<pre>
-annotation foo {
-    field baz type annotationreference&lt;bar&gt; { }
-}
-
-annotation bar { }
-</pre>
-      <table class="table">
-        <thead></thead><tbody>
-      <tr>
-        <th style="width:100px">Index</th>
-        <td>N/A</td>
-      </tr><tr>
-        <th>Attribute</th>
-        <td>N/A</td>
-      </tr><tr>
-        <th>Summary</th>
-        <td>N/A</td>
-      </tr>
-      </tbody>
-      </table>
-    </td></tr>
 
   <tr><th>array&lt;type&gt;</th>
     <td>
@@ -426,7 +395,7 @@ annotation bar { }
       </tbody>
       </table>
       <p>
-        Also use to create an array field of the given <a href="#struct">struct type</a>.
+        Also used to create an array field of the given <a href="#struct">struct type</a>.
         The struct type must be defined separately. Example:
       </p>
 <pre>
@@ -437,6 +406,7 @@ struct person {
 
 field people type array&lt;person&gt; {
     indexing: summary
+    summary:  matched-elements-only
     struct-field first_name {
         indexing: attribute
         attribute: fast-search
@@ -444,18 +414,18 @@ field people type array&lt;person&gt; {
 }
 </pre>
       <p>
-        The entire <em>people</em> field is part of document summary.
+        The entire <em>people</em> field is part of the document summary.
         The <a href="#struct-field">struct field</a> <em>first_name</em> is defined as an <em>attribute</em> for searching,
         with <a href="../attributes.html#fast-search">fast-search</a>.
         A subset, or all, of the struct fields can be defined as attributes.
       </p>
       <p>
         Use the <a href="query-language-reference.html#sameelement">sameElement</a>
-        operator to ensure matches in same struct field instance.
+        operator to ensure matches in the same struct field instance.
       </p>
       <p>
         Use <a href="#matched-elements-only">matched-elements-only</a>
-        to reduce the amount of data that is returned in document summary.
+        to reduce the amount of data that is returned in the document summary.
       </p>
       {% include important.html content="
       <code>key</code> and <code>value</code> are reserved words in an array&lt;struct&gt;,
@@ -465,10 +435,10 @@ field people type array&lt;person&gt; {
       <ul>
         <li>Array of struct types does not support <a href="../ranking.html">ranking features</a>
           and can only be used for matching and filtering.</li>
-        <li>All struct arrays can be fed, retrieved and used in document summaries.</li>
+        <li>All struct arrays can be fed, retrieved, and used in document summaries.</li>
         <li>Some parts of struct arrays can be searched in <a href="services-content.html#document">indexed search mode</a>,
         while all parts of struct arrays can be searched in <a href="../streaming-search.html">streaming search</a>.
-        See table below for supported cases.</li>
+        See below for supported cases.</li>
       </ul>
       <table class="table">
         <thead></thead><tbody>
@@ -642,74 +612,79 @@ field bignumber type long {
       <p id="map">
         Use to create a map where each unique key is mapped to a single value.
         Any primitive type can be used as <em>key-type</em> and any primitive type or Vespa struct type as <em>value-type</em>.
-        A map entry is handled as a struct with a <em>key</em> and <em>value</em> field
-        with <em>key-type</em> and <em>value-type</em> as types. Example:
-<pre>
-struct person {
-    field first_name type string {}
-    field last_name type string {}
-}
-field identities type map&lt;string, person&gt; {
-    indexing: summary
-    struct-field key {
-        indexing: attribute
-        attribute: fast-search
-    }
-    struct-field value.first_name {
-        indexing: attribute
-        attribute: fast-search
-    }
-}
-</pre>
-      <p>
-        The entire <em>identities</em> field is part of document summary,
-        and the <a href="#struct-field">struct fields</a>
-        <em>key</em> and <em>value.first_name</em> are defined as attributes, available for searching using the
-        <a href="query-language-reference.html#sameelement">sameElement</a> operator, and
-        <a href="grouping-syntax.html#multivalue-attributes">grouping</a>. The
-        attributes also have <code>fast-search</code>. See
-        <a href="../performance/feature-tuning.html#when-to-use-fast-search-for-attribute-fields">when to use fast-search</a>.
+        Example of a map of primitive types,
+        where the <em>key</em> and <em>value</em> fields are specified as <em>attributes</em>:
       </p>
-      <p>
-        Note that you can define only a subset of the struct fields as attributes.
-      </p>
-      <p>
-        Use <a href="#matched-elements-only">matched-elements-only</a>
-        to reduce the amount of data that is returned in document summary.
-      </p><p>
-      The next example shows a map of primitive types,
-      where the <em>key</em> and <em>value</em> struct fields are specified as attributes:
 <pre>
 field my_map type map&lt;string, int&gt; {
     indexing: summary
-    struct-field key { indexing: attribute }
+    struct-field key   { indexing: attribute }
     struct-field value { indexing: attribute }
 }
 </pre>
-      The following array of struct example is similar to the above,
-      the difference being that an array can contain the same element multiple times and maintains order.
+      <p>
+        Note that a Vespa map entry is handled as a <em>struct</em>
+        with a <em>key</em> and <em>value</em> field
+        with <em>key-type</em> and <em>value-type</em> as types.
+        This explains the <em>struct-field</em> syntax above.
+        The full <em>my_map</em> field is configured into the document summary.
+      </p>
+      <p>A more complex example is a map of struct:</p>
 <pre>
-struct mystruct {
-    field key type string { }
-    field value type int { }
+struct person {
+    field first_name type string {}
+    field last_name  type string {}
+    field age        type int {}
 }
-field my_array type array&lt;mystruct&gt; {
+
+field identities type map&lt;string, person&gt; {
     indexing: summary
+    summary:  matched-elements-only
     struct-field key {
-        indexing: attribute
+        indexing:  attribute
         attribute: fast-search
-        rank: filter
+    }
+    struct-field value.first_name {
+        indexing:  attribute
+        attribute: fast-search
+    }
+    struct-field value.last_name {
+        indexing:  attribute
+        attribute: fast-search
     }
 }
 </pre>
-      Restrictions:
+      <p>
+        This example illustrates that the struct elements are configured individually -
+        there is no field configuration for <em>age</em> -
+        one can define a subset of the struct fields as attributes.
+      </p>
+      <p>
+        Here, <em>key</em>, <em>value.first_name</em> and <em>value.last_name</em> are defined as attributes.
+        This makes them available for searching and <a href="/en/grouping.html#grouping-over-a-map-field">grouping</a>.
+        A common use case is requiring matches in the same map entry
+        (e.g., match both first and last name for the same person),
+        see the <a href="/en/reference/query-language-reference.html#sameelement">sameElement</a> operator
+        for how to implement this.
+        Use <a href="#matched-elements-only">matched-elements-only</a>
+        to reduce the amount of data in the document summary.
+        </p>
+      <p>
+        <a href="/en/performance/feature-tuning.html#when-to-use-fast-search-for-attribute-fields">fast-search</a>
+        is used to make query access faster by creating an index structure for lookups.
+      </p>
+      <p>
+        As an alternative to a map,
+        an <a href="#array">array&lt;struct&gt;</a> can contain the same element multiple times and maintains order.
+      </p>
+      <p>Restrictions:</p>
       <ul>
         <li>Map of struct or primitive types do not support <a href="../ranking.html">ranking features</a>
           and can only be used for matching and filtering.</li>
-        <li>All map types can be fed, retrieved and used in document summaries.</li>
+        <li>All map types can be fed, retrieved, and used in document summaries.</li>
         <li>Some map types can be searched in <a href="services-content.html#document">indexed search mode</a>,
         while all map types can be searched in <a href="../streaming-search.html">streaming search</a>.
-        See table below for supported cases.</li>
+        See below for supported cases:</li>
       </ul>
       <table class="table">
         <thead></thead><tbody>
@@ -793,7 +768,7 @@ field predicate_field type predicate {
         <td>Not supported</td>
       </tr><tr>
         <th>Attribute</th>
-        <td>Indexed in-memory in a variable size binary format that is optimized for application during query evaluation</td>
+        <td>Indexed in-memory in a variable-size binary format that is optimized for application during query evaluation</td>
       </tr><tr>
         <th>Summary</th>
         <td>Added as-is</td>
@@ -831,7 +806,7 @@ field rawfield type raw {
     <td>
       <p id="reference">
         A <em>reference&lt;document-type&gt;</em> field is a reference to an instance of a document-type -
-        i.e. a foreign key.
+        i.e., a foreign key.
         Reference fields are not supported in
         <a href="../streaming-search.html#differences-in-streaming-search">streaming search</a>.
       </p>
@@ -843,7 +818,7 @@ field artist_ref type reference&lt;artist&gt; {
       The reference is the <a href="../documents.html">document id</a> of the document-type instance.
       References are used to join documents in a <a href="../parent-child.html">parent-child relationship</a>.
       A reference can only be made to <a href="services-content.html#document">global</a> documents.
-      The following type of references are not supported:
+      The following types of references are not supported:
       <ul>
         <li>Self-reference</li>
         <li>Cyclic reference: If document type <em>foo</em> has a reference to <em>bar</em>,
@@ -858,8 +833,15 @@ field artist_ref type reference&lt;artist&gt; {
         <td>Invalid - deployment will fail</td>
       </tr><tr>
         <th>Attribute</th>
-        <td>As <a href="#string">string</a> - a reference must be an attribute.
-          Can be empty string or point to a non-existing document</td>
+        <td>
+          As <a href="#string">string</a> - a reference must be an attribute.
+          Can be an empty string or point to a non-existent document.
+          Memory usage is about 33 bytes per parent document.
+          This is composed of 24 bytes used in a reference store, with a btree structure
+          on top of that which requires 5 bytes on average (depends on lid compaction).
+          In addition 4 bytes on average for a reference from child document to the parent document
+          (depends on lid compaction). In total about 33 bytes.
+        </td>
       </tr><tr>
         <th>Summary</th>
         <td>As <a href="#string">string</a></td>
@@ -926,7 +908,7 @@ field my_person type person {
         <li>Struct fields can <strong>not</strong> be searched in indexed search mode
           (but <a href="#array">array of struct</a> and
           <a href="#map">map type</a> are searchable, with some restrictions).</li>
-        <li>Struct fields can be fed, retrieved and used in document summaries.</li>
+        <li>Struct fields can be fed, retrieved, and used in document summaries.</li>
       </ul>
       <table class="table">
         <thead></thead><tbody>
@@ -976,7 +958,7 @@ field tensorfield type tensor&lt;float&gt;(x[2],y[2]) {
         <td>Supported for tensor types with:
           <ul>
             <li>One indexed dimension - single vector per document</li>
-            <li>One mapped and one indexed dimension - multiple vectors per document</li>
+            <li>One or more mapped dimensions and one indexed dimension - multiple vectors per document</li>
           </ul>
           See <a href="../approximate-nn-hnsw.html">approximate nearest neighbor search</a>.</td>
       </tr><tr>
@@ -992,7 +974,7 @@ field tensorfield type tensor&lt;float&gt;(x[2],y[2]) {
 
   <tr><th>uri</th>
     <td><p id="uri">Use for URL type matching.
-        Uri fields are not supported in
+        URI fields are not supported in
         <a href="../streaming-search.html#differences-in-streaming-search">streaming search</a>.
         </p>
       <table class="table">
@@ -1001,10 +983,10 @@ field tensorfield type tensor&lt;float&gt;(x[2],y[2]) {
         <th style="width:100px">Index</th>
         <td>
           <p>
-            The URL is split into the different components which are indexed
+            The URL is split into its different components, which are indexed
             separately. Note that only URLs can be indexed this way, not other URIs.
             The different components are as defined by the HTTP standard:
-            Scheme, hostname, port, path, query and fragment. Example:
+            Scheme, hostname, port, path, query, and fragment. Example:
           <pre>
 http://mysite.mydomain.com:8080/path/shop?d=hab&amp;id=1804905709&amp;cat=100#frag1
 </pre>
@@ -1037,19 +1019,19 @@ query=sourceurl.hostname:slashdot
             URL hostnames also support <em>anchored searching</em>, see
             <a href="../reference/query-language-reference.html#uri">search in URL fields</a>.
           </p><p>
-          It is not possible to index uri-typed fields into a common index, i.e. it has
+          It is not possible to index uri-typed fields into a common index, i.e., it has
           to be indexed separately from other fields. If you need to combine URLs
-          with other fields you could store it in a string-field instead, but then
+          with other fields, you could store it in a string-field instead, but then
           you can not search in the different parts of the URL (scheme, hostname,
-          port, path, query and fragment).
+          port, path, query, and fragment).
         </p><p>
-          <strong>Aliasing</strong> also works different for URL fields - you
+          <strong>Aliasing</strong> also works differently for URL fields - you
           are allowed to create aliases both to the index (as usual) and to the
           components of it. Use
 <pre>
 alias [component]: [alias]
 </pre>
-          to create an alias to a component. For example, given this field:
+          to create an alias for a component. For example, given this field:
           <pre>
 field surl type uri {
     indexing: summary | index
@@ -1082,7 +1064,7 @@ field tag type weightedset&lt;string&gt; {
     indexing: attribute | summary
 }
 </pre>
-      The element type can be any single value type. Prefer not to use floating point number types
+      The element type can be any single value type. Prefer not to use floating-point number types
       like <em>float</em> or <em>double</em>.
 
       <p>
@@ -1095,7 +1077,7 @@ field tag type weightedset&lt;string&gt; {
         To access a weighted set in ranking when
         using <code>index</code>, see
         <a href="rank-features.html#features-for-indexed-multivalue-string-fields">ranking features
-        for indexed multi-valued fields</a>. Note that when using <code>index</code> with weightedset, queries
+        for indexed multivalued fields</a>. Note that when using <code>index</code> with weightedset, queries
         are matching across elements in the set.
       </p>
       <p>
@@ -1115,7 +1097,7 @@ field tag type weightedset&lt;string&gt; {
         <th style="width:100px">Index</th>
         <td>
           Each token present in the field is indexed separately.
-          Information indexed includes element number, element weight and a
+          Information indexed includes element number, element weight, and a
           list of token occurrence positions for each element in which the token is present
         </td>
       </tr><tr>
@@ -1133,8 +1115,7 @@ field tag type weightedset&lt;string&gt; {
 <p>
 The body of a field is optional for <a href="#schema">schema</a>,
 <a href="#document">document</a> and
-<a href="#struct">struct</a>, and <strong>disallowed</strong> for
-<a href="#annotation">annotation</a>. It may contain the following elements:
+<a href="#struct">struct</a>. It may contain the following elements:
 </p>
 <table class="table">
   <thead>
@@ -1262,12 +1243,12 @@ field artist type string {
 <p>
 Fields can be declared outside the document block in the schema.
 These fields are not part of the document type but behave like regular fields for queries.
-Since they are not part of the document they cannot be written directly,
+Since they are not part of the document, they cannot be written directly,
 but instead take their values from document fields, using the <code>input</code> expression:
 <code>indexing: input my_document_field | embed | summary | index</code>
 </p>
 <p>
-This is useful e.g. to index a field in multiple ways,
+This is useful e.g., to index a field in multiple ways,
 or to change the field value, something which is not allowed with document fields.
 When the document field(s) used as input are updated, these fields are updated with them.
 </p>
@@ -1279,7 +1260,7 @@ When the document field(s) used as input are updated, these fields are updated w
 Contained in <a href="#field">field</a> or
 <a href="#struct-field">struct-field</a>.
 Defines how this struct field (a subfield of a struct) should be stored,
-indexed, searched, presented and how it should influence ranking.
+indexed, searched, presented, and how it should influence ranking.
 The field in which this struct field is contained must be of
 type struct or a collection of type struct:
 </p>
@@ -1318,7 +1299,7 @@ struct-field [name] {
   </tbody>
 </table>
 <p>
-  If this struct field is of type struct (i.e. a nested struct), only <a href="#indexing">indexing:summary</a>
+  If this struct field is of type struct (i.e., a nested struct), only <a href="#indexing">indexing:summary</a>
     may be specified. See <a href="#array">array&lt;type&gt;</a> for example use.
 </p>
 
@@ -1332,7 +1313,7 @@ struct-field [name] {
   {% include note.html content="this is not related to the
   <a href='../documents.html#fieldsets'>Document fieldset</a>.
   Also see the <a href='../faq.html#must-all-fields-in-a-fieldset-have-compatible-type-and-matching-settings'>FAQ</a>
-  for a discussion of what happens when using different types / match settings." %}
+  for a discussion of what happens when using different types/match settings." %}
 <p>A fieldset groups fields together for searching:</p>
 <pre>
 fieldset myfieldset {
@@ -1341,7 +1322,7 @@ fieldset myfieldset {
 </pre>
 <p>
   Create a fieldset named <code>default</code> to be used as the default
-  (i.e. when not specified in the query):
+  (i.e., when not specified in the query):
 </p>
 <pre>
 fieldset default {
@@ -1353,7 +1334,7 @@ fieldset default {
   The fields in the fieldset should be as similar as possible in terms of indexing clause and <a href="#match">match mode</a>.
   If they are not, test the application thoroughly.
   Having different match modes for the fields in the fieldset generates a warning during application deployment.
-  If specific match settings for the fieldset is needed, such as <em>exact</em>, specify it using <em>match</em>:
+  If specific match settings for the fieldset are needed, such as <em>exact</em>, specify it using <em>match</em>:
 </p>
 <pre>
 fieldset myfieldset {
@@ -1372,7 +1353,7 @@ fieldset myfieldset {
     query-command:"exact @@"
 }
 </pre>
-<p>Adding a fieldset will not create extra index structures in memory / on disk, it is just a mapping.</p>
+<p>Adding a fieldset will not create extra index structures in memory / on disk; it is just a mapping.</p>
 
 
 <h2 id="compression">compression</h2>
@@ -1407,7 +1388,7 @@ The body of a compression specification is optional and may contain:
       A percentage (multiplied by 100) giving the maximum size that
       compressed data can have to keep the compressed value.
       If the resulting compressed data is higher than this,
-      the document will be stored uncompressed. Default value is 95.
+      the document will be stored uncompressed. The default value is 95.
     </p>
   </td>
 </tr>
@@ -1436,7 +1417,7 @@ rank-profile [name] inherits [rank-profile1], [rank-profile2], ...  {
 <p>The <code>inherits</code> list is optional and may contain the name of other rank profiles
 in this schema or one it inherits.
 Elements not defined in this rank profile will then be inherited from those profiles.
-Inheriting multiple profiles which define the same elements leads to an error at deployment.</p>
+Inheriting multiple profiles that define the same elements leads to an error at deployment.</p>
 
 <p>The body of a rank-profile may contain:</p>
 
@@ -1490,6 +1471,10 @@ as part of match-and summary-features.</td>
   <td>Zero or many</td>
   <td>An onnx model to make available in this profile.</td>
 </tr>
+<tr><td><a href="#significance">significance</a></td>
+  <td>Zero or one</td>
+  <td>To enable the use of significance models defined in the service.xml config.</td>
+</tr>
 <tr><td><a href="#rank-properties">rank-properties</a></td>
   <td>Zero or one</td>
 <td>List of any rank property key-values to be used by rank features.</td>
@@ -1529,7 +1514,7 @@ as part of match-and summary-features.</td>
   <td>Zero or one</td>
 <td>
   <p id="min-hits-per-thread">
-    After estimating number of hits for a query prior to query evaluation,
+    After estimating the number of hits for a query prior to query evaluation,
     this number is used to decide how many threads to use for the query.
   </p>
   <p>
@@ -1537,7 +1522,7 @@ as part of match-and summary-features.</td>
       estimated_hits / min-hits-per-thread)</code>
   </p>
   <p>
-    Current default is 1. If you suspect the fixed cost per thread is too high
+    The current default is 1. If you suspect the fixed cost per thread is too high,
     increasing this number might be a good idea.
     Especially if most of your queries are cheap,
     but you have increased the <a href="#num-threads-per-search">num-threads-per-search</a>
@@ -1550,12 +1535,12 @@ as part of match-and summary-features.</td>
   <td>Zero or one</td>
 <td>
   <p id="num-search-partitions">
-    Number of logical partitions the corpus on a searchnode is divided in.
+    The number of logical partitions in which the corpus is divided on a search node.
     By default, this is the same as <a href="#num-threads-per-search">num-threads-per-search</a>.
     A partition is the smallest unit a search thread will handle.
     If you have a locality in time when searching and feeding documents,
     you might want to split it into more, smaller partitions.
-    That way you avoid that one costly partition leaves some threads idle while others are working hard.
+    That way, you avoid that one costly partition leaves some threads idle while others are working hard.
   </p>
   <p>
     If you have 8 threads per search,
@@ -1571,7 +1556,7 @@ as part of match-and summary-features.</td>
 <td>
   <p id="termwise-limit">
     If estimated number of hits > corpus * termwise-limit,
-    it will prune candidates with a cpu cache friendly
+    it will prune candidates with a CPU cache-friendly
     <a href="../performance/feature-tuning.html#hybrid-taat-daat">TAAT</a>
     with the terms not needed for ranking,
     prior to doing <a href="../performance/feature-tuning.html#hybrid-taat-daat">DAAT</a>.
@@ -1589,21 +1574,22 @@ as part of match-and summary-features.</td>
   <p id="post-filter-threshold">
     Threshold value (in the range [0.0, 1.0]) deciding if a query with an approximate
     <a href="query-language-reference.html#nearestneighbor">nearestNeighbor</a>
-    operator combined with filters is evaluated using post-filtering instead of the default pre-filtering.
+    operator combined with filters is evaluated using post-filtering instead of the default filtering.
     Post-filtering is chosen when the estimated filter hit ratio of the query is <em>larger</em> than this threshold.
     The default value is 1.0, which disables post-filtering.
     See
     <a href="https://blog.vespa.ai/constrained-approximate-nearest-neighbor-search/#controlling-the-filtering-behavior-with-approximate-nearest-neighbor-search">
-    Controlling the filtering behavior with approximate nearest neighbor search</a>
-    for more details.
+    Controlling the filtering behavior with approximate nearest neighbor search</a> for more details.
   </p>
   <p>
     With post-filtering the <a href="query-language-reference.html#targethits">targetHits</a> value
     used when searching the HNSW index is auto-adjusted in an effort to expose <em>targetHits</em> hits
     to first-phase ranking after post-filtering has been applied. The following formula is used:
-    <pre>
+  </p>
+<pre>
     adjustedTargetHits = min(targetHits / estimatedFilterHitRatio, targetHits * targetHitsMaxAdjustmentFactor).
-    </pre>
+</pre>
+  <p>
     Use <a href="#target-hits-max-adjustment-factor">target-hits-max-adjustment-factor</a> to control
     the upper bound of the adjusted <em>targetHits</em>.
   </p>
@@ -1620,7 +1606,7 @@ as part of match-and summary-features.</td>
     <a href="query-language-reference.html#nearestneighbor">nearestNeighbor</a>
     operator combined with filters is evaluated by searching the
     <a href="schema-reference.html#index-hnsw">HNSW</a>
-    graph for approximate neighbors with pre-filtering,
+    graph for approximate neighbors with filtering,
     or performing an
     <a href="../nearest-neighbor-search.html">exact nearest neighbor search</a> with pre-filtering.
     The fallback to exact search is chosen when the estimated filter hit ratio of the query is <em>less</em>
@@ -1628,8 +1614,59 @@ as part of match-and summary-features.</td>
     The default value is 0.05.
     See
     <a href="https://blog.vespa.ai/constrained-approximate-nearest-neighbor-search/#controlling-the-filtering-behavior-with-approximate-nearest-neighbor-search">
-    Controlling the filtering behavior with approximate nearest neighbor search</a>
-    for more details.
+    Controlling the filtering behavior with approximate nearest neighbor search</a> for more details.
+  </p>
+  <p>
+    This parameter has no effect in <a href="../streaming-search.html#differences-in-streaming-search">streaming search</a>.
+  </p>
+</td>
+</tr>
+<tr><td>filter-first-threshold</td>
+  <td>Zero or one</td>
+<td>
+  <p id="filter-first-threshold">
+    Threshold value (in the range [0.0, 1.0]) deciding if the filter is checked before computing a distance
+    (<em>filter-first heuristic</em>) while searching the
+    <a href="schema-reference.html#index-hnsw">HNSW</a>
+    graph for approximate neighbors with filtering.
+    This improves the response time at low hit ratios but causes a dip in recall.
+    The heuristic is used when the estimated filter hit ratio of the query is <em>less</em>
+    than this threshold.
+    The default value is 0.0.
+  </p>
+  <p>
+    This parameter has no effect in <a href="../streaming-search.html#differences-in-streaming-search">streaming search</a>.
+  </p>
+</td>
+</tr>
+<tr><td>filter-first-exploration</td>
+  <td>Zero or one</td>
+<td>
+  <p id="filter-first-exploration">
+    Value (in the range [0.0, 1.0]) specifying how aggressively the
+    filter-first heuristic explores the graph when searching the
+    <a href="schema-reference.html#index-hnsw">HNSW</a>
+    graph for approximate neighbors with filtering.
+    A higher value means that the graph is explored more aggressively
+    and improves the recall at the cost of the response time.
+    The default value is 0.3.
+  </p>
+  <p>
+    This parameter has no effect in <a href="../streaming-search.html#differences-in-streaming-search">streaming search</a>.
+  </p>
+</td>
+</tr>
+<tr><td>exploration-slack</td>
+  <td>Zero or one</td>
+<td>
+  <p id="exploration-slack">
+    Value (in the range [0.0, 1.0]) specifying slack to delay the termination
+    of the search of the
+    <a href="schema-reference.html#index-hnsw">HNSW</a>
+    graph for approximate neighbors with or without filtering.
+    A higher value means that more of the graph is explored
+    and improves the recall at the cost of the response time.
+    The default value is 0.0.
   </p>
   <p>
     This parameter has no effect in <a href="../streaming-search.html#differences-in-streaming-search">streaming search</a>.
@@ -1651,17 +1688,54 @@ as part of match-and summary-features.</td>
     See <a href="#post-filter-threshold">post-filter-threshold</a> for more details.
   </p>
   <p>
-    This parameter no effect in <a href="../streaming-search.html#differences-in-streaming-search">streaming search</a>.
+    This parameter has no effect in <a href="../streaming-search.html#differences-in-streaming-search">streaming search</a>.
+  </p>
+</td>
+</tr>
+<tr><td>filter-threshold</td>
+  <td>Zero or one</td>
+<td>
+  <p id="filter-threshold">
+    The threshold value (in the range [0.0, 1.0]) deciding when matching in <em>index</em> fields should be treated as filters.
+    This happens for query terms with <a href="../glossary.html#estimated-hit-ratio">estimated hit ratios</a> (in the
+    range [0.0, 1.0]) that are above the <em>filter-threshold</em>.
+    Use this to optimize query performance when searching large text <a href="../schemas.html#indexing">index</a> fields,
+    by allowing a per query combination of <a href="#filter">rank: filter</a> and <a href="#normal">rank: normal</a> behavior.
+    This parameter can be overridden per <em>index</em> field, see <a href="#rank-filter-threshold">field-level filter-threshold</a>
+    for a more detailed description with tradeoffs.
+  </p>
+  <p>
+    In testing with various text datasets (e.g., Wikipedia), a <em>filter-threshold</em> setting of 0.05 has been shown to be a good starting point.
+    See <a href="../performance/feature-tuning.html#tuning-query-performance-for-lexical-search">Tuning query performance for lexical search</a>
+    for more details.
+  </p>
+  <p>
+    This parameter has no effect in <a href="../streaming-search.html#differences-in-streaming-search">streaming search</a>.
+  </p>
+  <p>
+    Use the <a href="/en/reference/query-api-reference.html#ranking.matching.filterThreshold">ranking.matching.filterThreshold</a>
+    query parameter to override this value.
   </p>
 </td>
 </tr>
 <tr><td><a href="#rank">rank</a></td>
   <td>Zero or more</td>
-<td>Specify if the field is used for ranking.</td>
+<td>Specify rank settings of a field in this profile.</td>
 </tr>
 <tr><td><a href="#rank-type">rank-type</a></td>
   <td>Zero or more</td>
 <td>The rank-type of a field in this profile.</td>
+</tr>
+<tr><td><a href="#weakand">weakand</a></td>
+  <td>Zero or one</td>
+  <td>
+    <p>
+      Tunes the <a href="../using-wand-with-vespa.html#weakand">weakAnd</a> algorithm to automatically
+      exclude terms and documents with expected low query significance based on
+      <a href="../glossary.html#document-frequency-normalized">document frequency</a>
+      statistics present in the document corpus. This makes matching faster at the cost of potentially reduced recall.
+    </p>
+  </td>
 </tr>
 </tbody>
 </table>
@@ -1674,10 +1748,10 @@ as part of match-and summary-features.</td>
 The match-phase feature lets you increase performance by limiting hits
 exposed to first-phase ranking to the highest (lowest) values of some attribute.
 The performance gain may be substantial, especially with an expensive first-phase function.
-The quality loss is dependent on how well the chosen attribute correlates with the
+The quality loss depends on how well the chosen attribute correlates with the
 first-phase score.</p>
 
-<p>Documents which have no value of the chosen attribute will be taken as having the value 0.</p>
+<p>Documents that have no value of the chosen attribute will be taken as having the value 0.</p>
 
 <p>
   See also <a href="../graceful-degradation.html#match-phase-degradation">graceful degradation</a>
@@ -1709,7 +1783,7 @@ match-phase {
     <p id="match-phase-order">
       Whether the attribute should be used in <code>descending</code> order (prefer documents with a high value)
       or <code>ascending</code> order (prefer documents with a low value).
-      Usually it is not necessary to specify this,
+      Usually, it is not necessary to specify this,
       as the default value <code>descending</code> is by far the most common.
     </p>
   </td></tr>
@@ -1717,7 +1791,7 @@ match-phase {
     <td>
       <p id="match-phase-max-hits">
         The max hits each content node should attempt to produce in the match phase.
-        Usually a number like 10000 works well here.</p>
+        Usually, a number like 10000 works well here.</p>
     </td></tr>
 </tbody>
 </table>
@@ -1729,7 +1803,7 @@ match-phase {
 
 <p>Contained in <a href="#rank-profile">rank-profile</a>.
 True or false. By default, Vespa uses loose type checking, where any query feature used but not defined in
-a query profile type is assumed to be a floats.
+a query profile type is assumed to be a float.
 Set true to cause a deploy failure on missing query property type definitions instead.</p>
 
 <pre>
@@ -1753,7 +1827,7 @@ Result sets are guaranteed to get at least <a href="#diversity-min-groups">min-g
 unique values from the <a href="#diversity-min-groups">diversity attribute</a> from this phase,
 but no more than max-hits. For <a href="#match-phase">match-phase</a> max-hits = <a href="#match-phase-max-hits">match-phase max-hits</a>.
 For <a href="#secondphase-rank">second-phase</a> max-hits = <a href="#secondphase-rerank-count">rerank-count</a>
-A document is considered as a candidate if:
+A document is considered a candidate if:
 <ul>
   <li>The query has not yet reached the <em>max-hits</em>
     number produced from this phase.</li>
@@ -1763,7 +1837,7 @@ A document is considered as a candidate if:
 </ul>
 <pre>
 diversity {
-    attribute: [numeric attribute]
+    attribute: [attribute name]
     min-groups: [integer]
 }
 </pre>
@@ -1775,7 +1849,7 @@ diversity {
       <td>
         <p id="diversity-attribute">
         Which attribute to use when deciding diversity.
-        The attribute referenced must be a single-valued numeric or string attribute.
+        The attribute must be a single-valued numeric, string or <a href="#reference">reference</a> type.
         </p>
       </td></tr>
     <tr><td style="white-space: nowrap">min-groups</td>
@@ -1800,34 +1874,34 @@ The config specifying the first phase of ranking.
 See <a href="../phased-ranking.html">
 phased ranking with Vespa</a>.
 
-This is the initial ranking performed on all matching documents, you should therefore avoid doing
-computationally expensive relevancy calculations here.
+This is the initial ranking performed on all matching documents;
+you should therefore avoid doing computationally expensive relevancy calculations here.
 By default, this will use the ranking feature <code>nativeRank</code>.
 <pre>
 first-phase {
     [body]
 }
 </pre>
-The body of a firstphase-ranking statement consists of:
+The body of a first-phase ranking statement consists of:
 <table class="table">
 <thead>
 <tr><th>Name</th><th>Description</th></tr>
 </thead><tbody>
 <tr><td><a href="#expression">expression</a></td>
   <td>
-    <p>Specify the ranking expression to be used for first phase of ranking -
+    <p>Specify the ranking expression to be used for the first phase of ranking -
     see <a href="../reference/ranking-expressions.html">ranking expressions</a>.</p>
   </td>
 </tr>
 <tr><td>keep-rank-count</td>
   <td>
-    <p id="keep-rank-count">How many documents to keep the first phase top rank values for. Default value is 10000.</p>
+    <p id="keep-rank-count">How many documents to keep the first phase top rank values for. The default value is 10000.</p>
   </td>
 </tr>
 <tr><td style="white-space: nowrap">rank-score-drop-limit</td>
   <td>
     <p id="rank-score-drop-limit">
-      Drop all hits with a first phase rank score less than or equal to this floating point number.
+      Drop all hits with a first-phase rank score less than or equal to this floating-point number.
       Use this to implement a rank cutoff.
       Default is <code>-Double.MAX_VALUE</code>
     </p>
@@ -1845,7 +1919,7 @@ Contained in <a href="#firstphase-rank">first-phase</a> or
 <a href="#globalphase-rank">global-phase</a>.
 Specify a <a href="../reference/ranking-expressions.html">ranking expression</a>.
 The expression can either be written directly or loaded from a file.
-When writing it directly the syntax is:
+When writing it directly, the syntax is:
 <pre>
 expression: [ranking expression]
 </pre>
@@ -1871,7 +1945,7 @@ The path is relative to the location of the schema definition file.
 The file itself must end with <code>.expression</code>. This suffix is optional in the schema.
 Therefore <code>expression: file:mlrranking.expression</code> and
 <code>expression: file:mlrranking</code> are identical.
-Both refer to a file called <code>mlrranking.expression</code> in the schemas directory.
+Both refer to a file called <code>mlrranking.expression</code> in the <em>schemas</em> directory.
 </p>
 {% include note.html content="Directories are not allowed in the path."%}
 
@@ -2041,8 +2115,7 @@ rank-properties {
 <h2 id="function-rank">function (inline)? [name]</h2>
 <p>
 Contained in <a href="#rank-profile">rank-profile</a>.
-Define a named function that can be referenced as a part of the ranking expression,
-    or (if having no arguments) as a feature.
+Define a named function that can be referenced as a part of the ranking expression, or (if having no arguments) as a feature.
 A function accepts any number of arguments.
 <pre>
 function [name]([arg1], [arg2], [arg3]) {
@@ -2095,7 +2168,7 @@ The config specifying the second phase of ranking.
 See <a href="../phased-ranking.html">
 phased ranking with Vespa</a>.
 
-This is the optional re-ranking phase performed on the top ranking hits from the
+This is the optional re-ranking phase performed on the top-ranking hits from the
 <code>first-phase</code>, and where you should put any advanced relevancy calculations.
 For example Machine Learned Ranking (MLR) models.
 
@@ -2111,16 +2184,16 @@ The body of a secondphase-ranking statement consists of:
 <tr><th>Name</th><th>Description</th></tr>
 </thead><tbody>
 <tr><td><a href="#expression">expression</a></td>
-<td><p>Specify the ranking expression to be used for second phase of ranking. (for a description,
+<td><p>Specify the ranking expression to be used for the second phase of ranking. (for a description,
   see the <a href="../reference/ranking-expressions.html">ranking expression</a> documentation.</p>
-  <p id="secondphase-rescoring">Hits not reranked might be rescored using a linear function to avoid a greater rank score than the worst reranked hit. This linear function will normally attempt to map the first phase rank score range of reranked hits to the reranked rank score range</p>
+  <p id="secondphase-rescoring">Hits not reranked might be re-scored using a linear function to avoid a greater rank score than the worst reranked hit. This linear function will normally attempt to map the first phase rank score range of reranked hits to the reranked rank score range</p>
 </td>
 </tr>
 <tr><td style="white-space: nowrap">rank-score-drop-limit</td>
   <td>
     <p id="secondphase-rank-score-drop-limit">
-      When set, drop all hits with a second phase rank score (possibly a <a href="#secondphase-rescoring">rescored</a> rank score) less than or equal to this floating point number.
-      Use this to implement a second phase rank cutoff.
+      When set, drop all hits with a second phase rank score (possibly a <a href="#secondphase-rescoring">re-scored</a> rank score) less than or equal to this floating point number.
+      Use this to implement a second-phase rank cutoff.
       By default, this value is not set. This can also be <a href="query-api-reference.html#ranking.secondphase.rankscoredroplimit">set in the query</a>.
     </p>
   </td>
@@ -2129,9 +2202,9 @@ The body of a secondphase-ranking statement consists of:
 <td>
   <p id="secondphase-rerank-count">
     Optional argument. Specifies the number of hits to be re-ranked in the second phase.
-    Default value is 100. This can also be <a href="query-api-reference.html#ranking.rerankcount">set in the query</a>.
+    The default value is 100. This can also be <a href="query-api-reference.html#ranking.rerankcount">set in the query</a>.
     Note that this value is local to each node involved in a query.
-    Hits not reranked might be <a href="#secondphase-rescoring">rescored</a>.
+    Hits not reranked might be <a href="#secondphase-rescoring">re-scored</a>.
   </p>
 </td>
 </tbody>
@@ -2147,13 +2220,12 @@ The config specifying the global phase of ranking.
 
 See <a href="../phased-ranking.html"> phased ranking with Vespa</a>.
 
-This is an optional re-ranking phase performed on the top ranking hits in
+This is an optional re-ranking phase performed on the top-ranking hits in
 the stateless container after merging hits from all the content nodes.
 The "top ranking" here means as scored by the first-phase ranking expression
 or (if specified) second-phase ranking expression.
 
-Typically used for computing large ONNX models which would be expensive
-to compute on all content nodes.
+Typically used for computing large ONNX models, which would be expensive to compute on all content nodes.
 
 By default, no global-phase ranking is performed.
 <pre>
@@ -2167,19 +2239,28 @@ The body of a global-phase ranking statement consists of:
 <tr><th>Name</th><th>Description</th></tr>
 </thead><tbody>
 <tr><td><a href="#expression">expression</a></td>
-<td>Specify the ranking expression to be used for global phase of ranking. (for a description,
+<td>Specify the ranking expression to be used for the global phase of ranking. (for a description,
     see the <a href="../reference/ranking-expressions.html">ranking expression</a> documentation.</td>
 </tr>
 <tr><td style="white-space: nowrap">rerank-count</td>
 <td>
   <p id="globalphase-rerank-count">
     Optional argument. Specifies the number of hits to be re-ranked in the global phase.
-    Default value is 100.
+    The default value is 100.
     Note for complex setups: Applied to hits from one schema at a time, so if
     a query searches in multiple schemas simultaneously, global-phase may run for 100 hits
     per schema as default.
   </p>
 </td>
+<tr><td style="white-space: nowrap">rank-score-drop-limit</td>
+    <td>
+        <p id="globalphase-rank-score-drop-limit">
+            When set, drop all hits with a global phase rank score (possibly a <a href="#globalphase-rank">re-scored</a> rank score) less than or equal to this floating point number.
+            Use this to implement a global phase rank cutoff.
+            By default, this value is not set. This can also be <a href="query-api-reference.html#ranking.globalphase.rankscoredroplimit">set in the query</a>.
+        </p>
+    </td>
+</tr>
 </tbody>
 </table>
 
@@ -2196,7 +2277,7 @@ The body of a global-phase ranking statement consists of:
 <p>
   If not specified, the features are as specified in the parent profile (if any).
   To inherit the features from the parent profile <em>and</em> specify additional features,
-  specify explicitly that the features should be inherited from the parent as shown below.
+  specify explicitly that the features should be inherited from the parent, as shown below.
   Refer to <a href="../schemas.html#schema-inheritance">schema inheritance</a> for examples.
 </p>
 <p>
@@ -2212,7 +2293,7 @@ summary-features: [feature] [feature]&hellip;
 </pre>
 <p>or</p>
 <pre>
-summary-features [inherits parent-profile]? {
+summary-features [inherits parent-profile (, other-parent-profile)* ]? {
     [feature]
     [feature]
 }
@@ -2241,10 +2322,10 @@ summary-features [inherits parent-profile]? {
 <p>
   <em>match-features</em> is similar to <a href="#summary-features">summary-features</a>,
   but the rank features specified here are computed in the <em>first protocol phase</em> of
-  <a href="../searcher-development.html#multiphase-searching">multi-protocol query execution</a>,
+  <a href="../searcher-development.html#multiphase-searching">multiprotocol query execution</a>,
   also called the <em>match</em> protocol phase.
 
-  This gives a different performance trade-off, for details see
+  This gives a different performance trade-off, for details, see
   <a href="../ranking-expressions-features.html#accessing-feature-function-values-in-results">
     feature values in results</a>.
 </p>
@@ -2253,7 +2334,7 @@ match-features: [feature] [feature]&hellip;
 </pre>
 <p>or</p>
 <pre>
-match-features [inherits parent-profile]? {
+match-features [inherits parent-profile (, other-parent-profile)* ]? {
     [feature]
     [feature]
 }
@@ -2282,7 +2363,7 @@ The phases are:
 </thead><tbody>
 <tr><td>on-match</td>
   <td>
-    <p id="on-match">All documents that satisfies the query.</p>
+    <p id="on-match">All documents that satisfy the query.</p>
   </td>
 </tr>
 <tr><td>on-first-phase</td>
@@ -2306,7 +2387,7 @@ The phases are:
 </table>
 <p>
   The attribute must be a single value numeric attribute, enabled as <a href="#mutable">mutable</a>.
-  It must also be defined outside of the <a href="#document">document</a> clause.
+  It must also be defined outside the <a href="#document">document</a> clause.
 </p>
 <table class="table">
 <thead>
@@ -2354,7 +2435,7 @@ The body of a constant must contain:
 </thead><tbody>
 <tr><td>file</td>
 <td>
-  Path to the file containing this constant, relative from the application package root.
+  Path to the file containing this constant, relative to the application package root.
   The file must be stored in a valid <a href="constant-tensor-json-format.html">tensor JSON Format</a>
   and end with <code>.json</code>. The file may be lz4 compressed, in which case the ending must be
   <code>.json.lz4</code>.
@@ -2375,8 +2456,7 @@ constant my_constant_tensor {
     type: tensor&lt;float&gt;(x{},y{})
 }
 </pre>
-This example has a constant tensor with two mapped dimensions, <code>x</code> and <code>y</code>.
-An example JSON file with such tensor constant:
+This example has a constant tensor with two mapped dimensions, <code>x</code> and <code>y</code>:
 <pre>
 {
     "cells": [
@@ -2388,9 +2468,9 @@ An example JSON file with such tensor constant:
 <p>
 When an application with tensor constants is deployed,
 the files are distributed to the content nodes
-before the new configuration is being used by the search nodes.
-Incremental changes to constant tensors is not supported.
-When changed, replace the old file with a new one and re-deploy the application
+before the new configuration is used by the search nodes.
+Incremental changes to constant tensors are not supported.
+When changed, replace the old file with a new one and redeploy the application,
 or create a new constant with a new name in a new file.
 </p>
 
@@ -2400,7 +2480,7 @@ or create a new constant with a new name in a new file.
 Contained in <a href="#schema">schema</a>.
 Whether raw fields should be rendered as a base64 encoded string in summary,
 the same way as in <a href="document-json-format.html#raw">json feed format</a>,
-rather than an escaped string. This is default true.
+rather than an escaped string. This is by default true.
 </p>
 
 <h2 id="onnx-model">onnx-model</h2>
@@ -2410,7 +2490,7 @@ This defines a named ONNX model located in a file
 that can be used in ranking expressions using the "onnx" rank feature.</p>
 
 <p>Prefer to define onnx models in the rank profiles using them.
-Onnx models are inherited from parent profiles, and from the schema.</p>
+Onnx models are inherited from parent profiles and from the schema.</p>
 
 <pre>
 onnx-model [name] {
@@ -2437,16 +2517,15 @@ The body of an ONNX model must contain:
     <td>input</td>
     <td style="white-space: nowrap">Zero to many</td>
     <td>
-      An input to the ONNX model. The ONNX name as given in the model as well as the
-      source for the input is specified.
+      An input to the ONNX model. The ONNX name, as given in the model, as well as the source for the input, is specified.
     </td>
   </tr>
   <tr>
     <td>output</td>
     <td>Zero to many</td>
     <td>
-      An output of the ONNX model. The ONNX name as given in the model as well as the
-      name for use in Vespa is specified. If no output are defined and are not
+      An output of the ONNX model. The ONNX name, as given in the model, as well as the
+      name for use in Vespa, is specified. If no output is defined and is not
       referred to from the rank feature, the first output defined in the model is used.
     </td>
   </tr>
@@ -2481,6 +2560,33 @@ The body of an ONNX model must contain:
 </table>
 <p>For more details including examples, see <a href="../onnx.html">ranking with ONNX models.</a></p>
 
+<h2 id="significance">significance</h2>
+<p>
+Contained in <a href="#rank-profile">rank-profile</a>.
+Configures a <a href="../significance.html">significance model</a>.
+</p>
+<pre>
+significance {
+    use-model: true
+}
+</pre>
+<p>The body must contain:</p>
+<table class="table">
+    <thead>
+        <tr><th>name</th>
+        <th>occurrence</th>
+        <th>description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>use-model</td>
+            <td>One</td>
+            <td>Enable or disable the use of significance models specified in  <a href="services-search.html#significance">service.xml</a>.</td>
+        </tr>
+    </tbody>
+</table>
+<p>For more details see <a href="../significance.html">Significance Model.</a></p>
+
 
 
 <h2 id="document-summary">document-summary</h2>
@@ -2497,7 +2603,7 @@ document-summary [name] inherits [document-summary1], [document-summary2], ... {
 <p>
   The <code>inherits</code> attribute is optional.
   If defined, it contains the name of other document summaries in the same schema (or a parent)
-  which this should inherit the fields of.
+  which this summary should inherit the fields of.
   Refer to <a href="../schemas.html#schema-inheritance">schema inheritance</a> for examples.
 </p>
 <p>The body of a document summary consists of:</p>
@@ -2509,7 +2615,13 @@ document-summary [name] inherits [document-summary1], [document-summary2], ... {
   <tr>
     <td>from-disk</td>
     <td>Zero or one</td>
-    <td>Marks this summary as accessing fields on disk</td>
+    <td>
+      Mark this summary as accessing fields on disk.
+      This will silence the warnings that this summary reads from disk;
+      in the console for prod deployments, on the command line for manual deployments.
+      Read more in <a href="/en/document-summaries.html#performance">Document Summaries</a>
+      on how to avoid disk access to speed up queries.
+    </td>
   </tr>
   <tr>
     <td><a href="#summary">summary</a></td>
@@ -2568,7 +2680,7 @@ all fields should use the same stemming type."%}
 <h2 id="normalizing">normalizing</h2>
 <p>Contained in <a href="#field">field</a>.
 Sets <a href="../linguistics.html#normalization">normalizing</a> to be done on this field.
-Default is to normalize.
+The default is to normalize.
 <pre>
 normalizing: [normalizing-type]
 </pre>
@@ -2584,59 +2696,74 @@ normalizing: [normalizing-type]
 
 <h2 id="dictionary">dictionary</h2>
 <p>
-  Contained in <a href="#field">field</a>,
-  and specifies details of the dictionary used in the inverted index of the field.
-  Applies only to <a href="#attribute">attributes</a> annotated with <code>fast-search</code>.
-  You can specify either <code>btree</code> or <code>hash</code>, or both.
+    Contained in <a href="#field">field</a>,
+    and specifies details of the dictionary used in the inverted index of the field.
+    Applies only to <a href="#attribute">attributes</a> annotated with <code>fast-search</code>.
+    You can specify either <code>btree</code> or <code>hash</code>, or both.
 </p>
-<p>
-  {% include note.html content='
-Note that prefix search for strings and range search for numeric fields will fall back to full scan
-if using <code>hash</code>.
 
-It is primarily intended for use when you have many unique terms with few occurrences (short posting lists),
-where the dictionary lookup cost could be significant. '%}
+<h3>Dictionary Types</h3>
+<p>
+    <strong>btree</strong> (Default): Provides good performance for exact, prefix, and range lookups.
+    Recommended for most use cases. Find more details in <a href="../attributes.html#index-structures">attribute index structures</a>.
 </p>
 
 <p>
-  Normally, <code>btree</code> is your best choice as it offers reasonable performance
-  for both exact, prefix and range type of dictionary lookups.
-  This is also the default.
-  Find more details in <a href="../attributes.html#index-structures">attribute index structures</a>.
+    <strong>hash</strong>: Optimized for fields with high cardinality (many unique values),
+    such as unique ID fields where each posting list contains only one item.
+</p>
+
+<p>
+    {% include note.html content='
+    When using <code>hash</code>, prefix searches for strings and range searches for numeric fields
+    will fall back to a full scan. This is primarily beneficial when you have many unique terms with
+    few occurrences each, where dictionary lookup costs would otherwise be significant. '%}
+</p>
+
+<h3>Case Handling for String Fields</h3>
+<p>
+    For string attributes, you can specify how character case is handled:
+</p>
+<ul>
+    <li><strong>uncased</strong> (Default): Case-insensitive - 'bear', 'Bear', and 'BEAR' are treated as identical</li>
+    <li><strong>cased</strong>: Case-sensitive - 'bear', 'Bear', and 'BEAR' are treated as different terms</li>
+</ul>
+<p>
+    This setting is automatically checked against the field's <a href="#match">match:casing</a> setting.
+</p>
+
+<h3>Important Rules for String Fields with Dictionaries</h3>
+<p>
+    <strong>For <code>btree</code> dictionaries</strong>: Both <code>cased</code> and <code>uncased</code> options are supported.
 </p>
 <p>
-  Use <code>hash</code> for fields with high uniqueness (high cardinality),
-  for example an 'id' field which is unique in the corpus where the posting list is always of size 1.
+    <strong>For <code>hash</code> dictionaries</strong>: Only <code>cased</code> is supported for string fields. When using <code>hash</code> dictionaries:
 </p>
-<p>
-  In addition, one can specify <code>uncased</code> or <code>cased</code> dictionary for string attributes,
-  default is <code>uncased</code>.
-  This setting is sanity checked against the field <a href="#match">match:casing</a> setting. </p>
+<ul>
+    <li>You <strong>must</strong> set <code>match: cased</code> on the field</li>
+    <li>You <strong>must</strong> include <code>cased</code> in the dictionary block</li>
+</ul>
 
-  <p>
-  In an <code>uncased</code> dictionary,
-  casing is normalized by lowercasing so that 'bear' equals 'Bear' equals 'BEAR'.
-  In a <code>cased</code> dictionary, they will all be different.</p>
+<pre>
+dictionary {
+  hash    <!-- Specifies hash dictionary type -->
+  cased   <!-- Required with hash for string fields -->
+}
+</pre>
 
-  <p>
-
-  Example of a string field with a cased hash dictionary. Note that for string fields with
-  dictionary type hash, the <code>dictionary</code> block must also include <code>cased</code>.
-  </p>
-  <pre>
+<h3>Example: Case-Sensitive Hash Dictionary</h3>
+<pre>
 field id_str type string {
       indexing:   summary | attribute
-      attribute:  fast-search
-      match:      cased
+      attribute:  fast-search  <!-- Enables dictionary functionality -->
+      match:      cased        <!-- Required for hash dictionaries with strings -->
       rank:       filter
       dictionary {
-        hash
-        cased
+        hash                   <!-- Use hash dictionary type -->
+        cased                  <!-- Required for hash dictionaries with strings -->
       }
 }
-  </pre>
-
-</p>
+</pre>
 
 
 
@@ -2656,14 +2783,14 @@ attribute [attribute-name] {
 }
 </pre>
 Read the <a href="../attributes.html">introduction to attributes</a>.
-If attribute name is specified it will be used instead of the field name as name of the attribute.
+If the attribute name is specified, it will be used instead of the field name as the name of the attribute.
 {% include deprecated.html content="Deprecated, use a field with the wanted name outside the document instead."%}
 Actions required when <a href="#modifying-schemas">adding or modifying attributes</a>. Properties:
 <table class="table">
 <thead>
 <tr><th style="width:150px">Property</th><th>Description</th></tr>
 </thead><tbody>
-<tr><td>fast-search</td><td>Create a dictionary / index structure to speed up search in the attribute.
+<tr><td>fast-search</td><td>Create a dictionary/index structure to speed up search in the attribute.
   <a href="../attributes.html#index-structures">Read more</a>.</td></tr>
 <tr><td>fast-access</td><td>
   If <a href="services-content.html#searchable-copies">searchable-copies</a> &lt;
@@ -2680,12 +2807,12 @@ Actions required when <a href="#modifying-schemas">adding or modifying attribute
   Only supported for <a href="../tensor-user-guide.html">tensor</a> field types with at least one mapped dimension.
   Ensures that the per-document tensors are stored in-memory using a format that is more optimal for
   <a href="ranking-expressions.html">ranking expression</a> evaluation. This comes at the cost of using more memory.
-  Without this setting these tensors are serialized in-memory,
-  which requires de-serialization as part of ranking expression evaluation.
+  Without this setting, these tensors are serialized in-memory,
+  which requires deserialization as part of ranking expression evaluation.
   See <a href="../performance/feature-tuning.html#tensor-ranking">tensor performance</a>.
 </td></tr>
 <tr><td>paged</td><td>
-  This can reduce memory footprint by allowing paging the attribute data out of memory to disk.
+  This can reduce the memory footprint by allowing paging the attribute data out of memory to disk.
   Not supported for <a href="#tensor">tensor</a> with fast-rank and
   <a href="#predicate">predicate</a> types.
   See <a href="../attributes.html#paged-attributes">paged attributes</a> for details.
@@ -2761,17 +2888,17 @@ sorting {
       <td>
         <a href="query-language-reference.html#strength">UCA sort strength</a>, default <code>primary</code> -
         see <a href="query-language-reference.html#strength">strength</a> for values.
-        Values set in the query overrides the schema definition.
+        Values set in the query override the schema definition.
       </td>
     </tr>
     <tr>
       <td>locale</td>
       <td>
         <a href="query-language-reference.html#locale">UCA locale</a>, default none,
-        indicating that it is inferred from query.
+        indicating that it is inferred from the query.
         It should only be set here if the attribute is filled with data in one language only.
         See <a href="query-language-reference.html#locale">locale</a> for details.
-        Values set in the query overrides the schema definition.
+        Values set in the query override the schema definition.
       </td>
     </tr>
   </tbody>
@@ -2790,9 +2917,9 @@ sorting {
   it must match the distance metric used during representation learning (model learning).
   If you are using an "off-the-shelf" model to vectorize your data, please ensure
   that the distance metric matches the distance metric suggested for use with the model.
-  Different type of vectorization models use different type of distance metrics.
+  Different types of vectorization models use different types of distance metrics.
 </p>
-{% include important.html content="When changing the <code>distance-metric</code>,
+{% include important.html content="When changing the <code>distance-metric</code> or <code>max-links-per-node</code>,
 the content nodes must be restarted to rebuild the HNSW index - see
 <a href='#changes-that-require-restart-but-not-re-feed'>changes that require restart but not re-feed</a>"%}
 <p>
@@ -2977,19 +3104,20 @@ with same dimension of size <em>n</em> for all vectors.
 
 <h3 id="euclidean">euclidean</h3>
 <p>
-  The default metric is <a href="https://en.wikipedia.org/wiki/Euclidean_distance">euclidean distance</a>
+  The default metric is <a href="https://en.wikipedia.org/wiki/Euclidean_distance">Euclidean distance</a>
   which is just the length of a line segment between the two points.
-  To compute the euclidean distance directly in a ranking expression
+  To compute the Euclidean distance directly in a ranking expression
   instead of fetching one already computed in a nearestNeighbor query
   operator, use the
   <a href="ranking-expressions.html#euclidean-distance-t">
-  euclidean_distance helper function</a>:
-  <pre>
+  Euclidean_distance helper function</a>:
+</p>
+<pre>
     function mydistance() {
         expression: euclidean_distance(attribute(myembedding), query(myqueryvector), mydim))
     }
-  </pre>
-</p>
+</pre>
+
 
 <h3 id="angular">angular</h3>
 <p>
@@ -3001,24 +3129,24 @@ with same dimension of size <em>n</em> for all vectors.
   To compute the angular distance directly in a ranking expression, use the
   <a href="ranking-expressions.html#cosine-similarity-t">
   cosine_similarity helper function</a>:
-  <pre>
+<pre>
     function angle() {
         expression: acos(cosine_similarity(attribute(myembedding), query(myqueryvector), mydim))
     }
-  </pre>
+</pre>
   Conversely, the cosine similarity can be recovered from the
   <a href="rank-features.html#distance(dimension,name)">distance rank-feature</a>
   when using a nearestNeighbor query operator:
-  <pre>
+<pre>
     rank-profile cosine {
         first-phase {
             expression: cos(distance(field, myembedding))
         }
     }
-  </pre>
+</pre>
   If possible, it's slightly better for performance to normalize both query and document vectors to the same
   L2 norm and use the <code>prenormalized-angular</code> metric instead; but note that returned
-  distance and closeness will be differerent.
+  distance and closeness will be different.
 
 <h3 id="dotproduct">dotproduct</h3>
 <p>
@@ -3027,7 +3155,7 @@ with same dimension of size <em>n</em> for all vectors.
   it can be solved by nearest neighbor search, where the dotproduct
   is used as a score directly (large positive dotproducts are
   considered "nearby").
-  Internally an extra dimension is added (ensuring that all vectors
+  Internally, an extra dimension is added (ensuring that all vectors
   are normalized to the same length) and a distance similar to
   <em>prenormalized-angular</em> is used to build the HNSW index.
   For details, see
@@ -3056,8 +3184,7 @@ with same dimension of size <em>n</em> for all vectors.
   or positive value, and <em>distance</em> is just the negative dot product.
   If a normalized closeness in range <code>[0,1]</code> is needed, an appropriate
   <a href="https://en.wikipedia.org/wiki/Sigmoid_function">sigmoid function</a> must be applied.
-  For example, if your attribute is named "foobar", and the maximum dotproduct seen is
-  around 4000, the expression
+  For example, if your attribute is named "foobar", and the maximum dotproduct seen is around 4000, the expression
   <code>sigmoid(0.001*closeness(field,foobar))</code>
   could be a possible choice.
 </p>
@@ -3072,14 +3199,14 @@ with same dimension of size <em>n</em> for all vectors.
 <p>
   The <em>prenormalized-angular</em> distance metric
   <strong>must only be used</strong> when <strong>both</strong> query and document vectors are normalized.
-  This metric was previously named "innerproduct" and required unit length vectors;
-  the new version computes the length of the query vector once and
+  This metric was previously named "innerproduct" and required unit-length vectors.
+  The new version computes the length of the query vector once and
   assumes all other vectors are of the same length.
 </p>
 <p>
   Using <em>prenormalized-angular</em> with vectors that are not
   normalized causes unpredictable nearest neighbor search, and is
-  observed to give very bad results both for performance and quality.
+  observed to give bad results both for performance and quality.
 </p>
 <p>
   The length, magnitude, or norm of a vector <em>x</em> is calculated as <code>length = sqrt(sum(pow(xi,2)))</code>.
@@ -3096,7 +3223,7 @@ with same dimension of size <em>n</em> for all vectors.
   1.0 for a right angle, and 2.0 for vectors with exactly opposite directions.
   Getting the cosine score (or angle) is therefore easy:
 </p>
-  <pre>
+<pre>
     rank-profile cosine {
         first-phase {
           expression: 1.0 - distance(field, embedding)
@@ -3105,17 +3232,17 @@ with same dimension of size <em>n</em> for all vectors.
           expression: acos(1.0 - distance(field, embedding))
         }
     }
-  </pre>
+</pre>
   To compute the cosine similarity directly in a ranking expression
   instead of fetching one already computed in a nearestNeighbor query
   operator, use the
   <a href="ranking-expressions.html#cosine-similarity-t">
   cosine_similarity helper function</a>:
-  <pre>
+<pre>
     function mysimilarity() {
         expression: cosine_similarity(attribute(myembedding), query(myqueryvector), mydim))
     }
-  </pre>
+</pre>
 
 
 <h3 id="geodegrees">geodegrees</h3>
@@ -3134,11 +3261,10 @@ with same dimension of size <em>n</em> for all vectors.
 <h3 id="hamming">hamming</h3>
 <p>
   The <a href="https://en.wikipedia.org/wiki/Hamming_distance">Hamming distance</a>
-  metric counts the number of dimensions where the
-  vectors have different coordinates.
+  metric counts the number of dimensions where the vectors have different coordinates.
   This isn't useful for floating-point data since it means you only
   get 1 bit of information from each floating-point number.
-  Instead, it should be used for binary data where each bit is
+  Instead, it should be used for binary data, where each bit is
   considered a separate coordinate.  Practically, this means you
   should use the
   <code>int8</code> <a href="../performance/feature-tuning.html#cell-value-types">cell value type</a>
@@ -3158,7 +3284,7 @@ with same dimension of size <em>n</em> for all vectors.
   Feeding data for this use case may be done with
   <a href="document-json-format.html#tensor-hex-dump">"hex dump"</a> format
   instead of numbers in range <code>[-128,127]</code> both to have a more natural format
-  for representing binary data, and to avoid the overhead of parsing a large json array of numbers.
+  for representing binary data, and to avoid the overhead of parsing a large JSON array of numbers.
 </p>
 
 
@@ -3208,15 +3334,15 @@ bolding: on
 <h2 id="id">id</h2>
 <p>
 Contained in <a href="#field">field</a>.
-Sets the numerical id of this field.
-All fields have a document-internal id internally for transfer and storage.
-Ids are usually determined programmatically as a 31-bit number.
-Some storage and transfer space can be saved by instead explicitly setting id's to a 7-bit number.
-<!-- ToDo: check is this applies to proton -->
+Sets the numerical ID of this field.
+All fields have a document-internal ID internally for transfer and storage.
+IDs are usually determined programmatically as a 31-bit number.
+Some storage and transfer space can be saved by instead explicitly setting IDs to a 7-bit number.
+<!-- ToDo: check if this applies to proton -->
 <pre>
 id: [positive integer]
 </pre>
-<p>An id must satisfy these requirements:</p>
+<p>An ID must satisfy these requirements:</p>
 <ul>
 <li>Must be a positive integer</li>
 <li>Must be less than 100 or larger than 127</li>
@@ -3229,9 +3355,19 @@ id: [positive integer]
 <p>
 Contained in <a href="#field">field</a> or <a href="#schema">schema</a>.
 Sets index parameters.
-Content in fields with <em>index</em> are <a href="#normalizing">normalized</a> and
-<a href="../linguistics.html#tokenization">tokenized</a> by default.
-This element can be single- or multivalued:
+</p>
+<p>
+  Content in <a href="#string">string</a>-fields with <em>index</em> is <a href="#normalizing">normalized</a> and
+  <a href="../linguistics.html#tokenization">tokenized</a> by default.
+  The field can be single- or multivalued (e.g. <code>array&lt;string&gt;</code>).
+</p>
+<p>
+  For <a href="#tensor">tensor</a>-typed fields, <em>index</em> creates an <a href="#index-hnsw">HNSW</a> index
+  for <a href="/en/nearest-neighbor-search-guide.html">Approximate Nearest Neighbor</a> queries,
+  with a default <a href="#euclidean">euclidean</a> distance metric.
+  The index is built after a <a href="#changes-that-require-restart-but-not-re-feed">content node restart</a> (automated on Vespa Cloud).
+</p>
+<p>Examples:</p>
 <pre>
 index [index-name]: [property]
 </pre>
@@ -3243,8 +3379,12 @@ index [index-name] {
     &hellip;
 }
 </pre>
-If index name is specified it will be used instead of the field name as name of the index.
-{% include deprecated.html content="Deprecated, use a field with the wanted name outside the document instead."%}
+
+{% include deprecated.html content='
+If <code>index-name</code> is specified, it will be used instead of the field name as the name of the index.
+This use is deprecated, use a synthetic field with the wanted name outside the <code>document</code> block instead -
+see an <a href="/en/indexing.html#date-indexing">example</a>.'%}
+
 Parameters:
 <table class="table">
   <thead>
@@ -3255,8 +3395,7 @@ Parameters:
   <td>Set the stemming of this index.
     Indexes without a stemming setting get their stemming setting from
     the fields added to the index. Setting this explicitly is useful if
-    fields with conflicting stemming settings are added to
-    this index.</td>
+    fields with conflicting stemming settings are added to this index.</td>
 </tr>
 <tr><td>arity</td>
   <td>One (mandatory for predicate fields), else zero.</td>
@@ -3288,18 +3427,19 @@ Parameters:
     <a href="rank-features.html#bm25">bm25 rank feature</a>.
     This creates posting lists for the
     <a href="../proton.html#index">indexes</a>
-    for this field that have interleaved features in the document id streams.
+    for this field that has interleaved features in the document id streams.
     This makes it fast to compute the <em>bm25</em> score.
+    See the <a href="/en/reference/bm25.html">BM25 reference</a> for details and example use.
   </td>
 </tr>
 <tr><td><a href="#index-hnsw">hnsw</a></td>
   <td>Zero to one</td>
   <td>
-    Specifies that an HNSW index should be built to speed up approximate nearest neighbor search.
+    Specifies optional parameters for an HNSW index to enable faster, approximate nearest neighbor search.
     Only supported for tensor attribute fields with tensor types with:
     <ul>
       <li>One indexed dimension - single vector per document</li>
-      <li>One mapped and one indexed dimension - multiple vectors per document</li>
+      <li>One or more mapped dimensions and one indexed dimension - multiple vectors per document</li>
     </ul>
     Used in combination with the
     <a href="query-language-reference.html#nearestneighbor">nearestNeighbor</a>
@@ -3314,19 +3454,22 @@ Parameters:
 <h2 id="index-hnsw">hnsw</h2>
 <p>
 Contained in <a href="#index">index</a>.
-Specifies that an HNSW index should be built to speed up approximate nearest neighbor search
+Specifies optional parameters for an HNSW index to enable faster, approximate nearest neighbor search
 using the <a href="query-language-reference.html#nearestneighbor">nearestNeighbor</a> query operator.
+
+{% include note.html content="Specifying the <code>index</code> keyword in the <a href='#indexing'>indexing</a> statement of a tensor creates an HNSW index with default settings, even if this block is not specified! "%}
+
 This implements a modified version of the
 Hierarchical Navigable Small World (HNSW) graphs algorithm (<a href="https://arxiv.org/abs/1603.09320">paper</a>).
 </p>
-<p>
-Only supported for the following tensor attribute field types:
+<p>Only supported for the following tensor attribute field types:</p>
 <ul>
     <li>Single vector per document: Tensor type with one indexed dimension.
         Example: <code>tensor&lt;float&gt;(x[3])</code></li>
-    <li>Multiple vectors per document: Tensor type with one mapped and one indexed dimension.
-        Example: <code>tensor&lt;float&gt;(m{},x[3])</code></li>
+    <li>Multiple vectors per document: Tensor type with one or more mapped dimensions and one indexed dimension.
+        Examples: <code>tensor&lt;float&gt;(m{},x[3])</code>, <code>tensor&lt;float&gt;(m{},n{},x[3])</code></li>
 </ul>
+<p>
 HNSW indexes are not supported in
 <a href="../streaming-search.html#differences-in-streaming-search">streaming search</a>.
 </p>
@@ -3337,8 +3480,7 @@ hnsw {
     ...
 }
 </pre>
-<p>
-The following parameters are used when building the index graph:
+<p>The following parameters are used when building the index graph:</p>
 <table class="table">
 <thead>
   <tr><th>Parameter</th><th>Description</th></tr>
@@ -3347,7 +3489,7 @@ The following parameters are used when building the index graph:
   <tr>
     <td>max-links-per-node</td>
     <td>
-    Specifies how many links per HNSW node to select when building the graph. Default value is 16.
+    Specifies how many links per HNSW node to select when building the graph. The default value is 16.
     In <a href="https://github.com/nmslib/hnswlib/blob/master/ALGO_PARAMS.md">HNSWlib</a> (implementation based on the paper)
     this parameter is known as <em>M</em>.
     </td>
@@ -3355,20 +3497,26 @@ The following parameters are used when building the index graph:
   <tr>
     <td>neighbors-to-explore-at-insert</td>
     <td>
-    Specifies how many neighbors to explore when inserting a document in the HNSW graph. Default value is 200.
-    In HNSWlib this parameter is known as <em>ef_construction</em>.
+    Specifies how many neighbors to explore when inserting a document in the HNSW graph. The default value is 200.
+    In HNSWlib, this parameter is known as <em>ef_construction</em>.
     </td>
   </tr>
 </tbody>
 </table>
 <p>
-The <a href="#distance-metric">distance metric</a> specified on the attribute
-is used when building and searching the graph. Example:
+  The <a href="#distance-metric">distance metric</a> specified on the <em>attribute</em>
+  is used when building and searching the graph. Example:
 <pre>
-index {
-    hnsw {
-        max-links-per-node: 16
-        neighbors-to-explore-at-insert: 200
+field text_embedding type tensor&lt;float&gt;(x[384]) {
+    indexing: summary | attribute | index
+    attribute {
+        distance-metric: prenormalized-angular
+    }
+    index {
+        hnsw {
+            max-links-per-node: 24
+            neighbors-to-explore-at-insert: 200
+        }
     }
 }
 </pre>
@@ -3387,9 +3535,9 @@ for how the Vespa team selected HNSW as the baseline algorithm for extension and
 Contained in <a href="#field">field</a> or
 <a href="#struct-field">struct-field</a>.
 One or more Indexing Language instructions used to produce index, attribute
-and summary data from this field. Indexing instructions has pipeline
-semantics similar to unix shell commands. The value of the field
-enters the pipeline during indexing and the pipeline puts the value
+and summary data from this field. Indexing instructions have pipeline
+semantics similar to Unix shell commands. The value of the field
+enters the pipeline during indexing, and the pipeline puts the value
 into the desired index structures, possibly doing transformations and
 pulling in other values along the way.
 <pre>
@@ -3405,9 +3553,9 @@ indexing {
 </pre>
 <p>
 If the field containing this is defined outside the document, it
-must start by an indexing statement which
+must start with an indexing statement which
 outputs a value (either "input [fieldname]" to fetch a field value,
-or a literal, e.g "some-value" ). Fields in documents will use the value of the enclosing
+or a literal, e.g, "some-value" ). Fields in documents will use the value of the enclosing
 field as input (input [fieldname]) if one isn't explicitly provided.
 </p>
 <p>
@@ -3436,7 +3584,6 @@ Supported expressions for fields are:
   <p id="indexing-index">
   Creates a searchable <a href="../proton.html#index">index</a> for the values of this field
   using <a href="#match">match</a> mode <code>text</code>.
-  All strings are lower-cased before stored in the index.
   By default, the index name will be the same as the name of the schema field.
   Use a <a href="#fieldset">fieldset</a> to combine fields in the same set for searching.
   </p>
@@ -3448,7 +3595,7 @@ Supported expressions for fields are:
 <tr><td>summary</td>
 <td>
   Includes the value of this field in a <a href="indexing-language-reference.html#summary">summary</a> field.
-  Modify summary output by using <a href="#summary">summary:</a> (e.g. to generate dynamic teasers).
+  Modify summary output by using <a href="#summary">summary:</a> (e.g., to generate dynamic teasers).
 </td></tr>
 </tbody>
 </table>
@@ -3465,7 +3612,7 @@ So searches in this field will not search the contents in the <a href="#attribut
 <h2 id="match">match</h2>
 <p>Contained in <a href="#field">field</a>, <a href="#fieldset">fieldset</a> or
 <a href="#struct-field">struct-field</a>.
-Sets the matching method to use for this field to something else than the default token matching.
+Sets the matching method to use for this field to something other than the default token matching.
 <pre>
 match: [property]
 </pre>
@@ -3480,7 +3627,7 @@ match {
 <p>
 Whether the match type is <code>text</code>, <code>word</code> or <code>exact</code>,
 all term matching will be done after <a href="../linguistics.html#normalization">normalization</a>
-and locale independent lowercasing (in that order).
+and locale-independent lowercasing (in that order).
 </p><p>
 Find examples and more details in the <a href="../text-matching.html">Text Matching</a> guide.
 Also see search using <a href="query-language-reference.html#matches">regular expressions</a>.
@@ -3492,7 +3639,7 @@ Also see search using <a href="query-language-reference.html#matches">regular ex
 <tr><td>text</td>
 <td>index</td>
 <td><p>
-  Default for string fields with <code>index</code>. Can not be combined with exact matching.
+  The default for string fields with <code>index</code>. Can not be combined with exact matching.
   The field is matched per <a href="../linguistics.html#tokenization">token</a>.
 </p></td>
 </tr>
@@ -3504,13 +3651,14 @@ Also see search using <a href="query-language-reference.html#matches">regular ex
   </p><p>
   The field is matched <em>exactly</em>:
   Strings containing any characters whatsoever will be indexed and matched as-is.
+  Lowercasing is still performed unless <code>match: cased</code> is also used.
   In queries, the exact match string ends at the exact match terminator (below).
   </p><p>
   A field with <code>match: exact</code> is considered to be
   a <a href="#filter">filter field</a>, just as if <code>rank: filter</code> was specified.
   This is because there is only one word per field
   (or per item in the case of multivalued types such as <code>array&lt;string&gt;</code>),
-  so there little ranking information.
+  so there is little ranking information.
   Turn off the implicit <code>rank: filter</code> by adding <code>rank: normal</code>.
 </p></td>
 </tr>
@@ -3547,11 +3695,13 @@ someword AND (tag:!*!@@ OR tag:(kanoo)@@)
 <td>index, attribute</td>
 <td><p id="word">
   This is the default matching mode for <a href="../attributes.html">string attributes</a>.
-  Can not be combined with <em>text</em> matching.
+  It cannot be combined with <em>text</em> matching.
+  </p><p>
+  Match word means that the entire content of the field is indexed as a single word.
   </p><p>
   Word matching is like exact matching, but with more advanced query parsing.
-  The query terms is heuristically parsed taking into account some usual query syntax characters;
-  one can also use double quotes to include space, star, or exclamation marks.
+  The query terms are heuristically parsed, taking into account some usual query syntax characters.
+  One can also use double quotes to include spaces, stars, or exclamation marks.
   </p><p>
   Example: If <code>artist</code> is a string attribute, the query:
 <pre>
@@ -3571,7 +3721,7 @@ foo AND (artist:"'N Sync" OR artist:"*NSYNC" OR artist:A*teens OR artist:"Wham!"
 <tr><td>prefix</td>
 <td>attribute</td>
 <td><p id="prefix">
-  Has no effect as <a href="../attributes.html">attributes</a>
+  Has no effect, as <a href="../attributes.html">attributes</a>
   always support prefix searches. Prefix matching must be
   <a href="query-language-reference.html#prefix">specified in the query</a>.
   See also <a href="query-language-reference.html#matches">regular expressions</a>.
@@ -3585,7 +3735,7 @@ foo AND (artist:"'N Sync" OR artist:"*NSYNC" OR artist:A*teens OR artist:"Wham!"
         Only available in streaming search.
         As the data structures in streaming search support substring searches,
         one can always set substring matching in the query,
-        without setting the field to substring default.
+        without setting the field to the substring default.
         Also see <a href="query-language-reference.html#matches">regular expressions</a>.
     </p></td>
 </tr>
@@ -3597,17 +3747,21 @@ foo AND (artist:"'N Sync" OR artist:"*NSYNC" OR artist:A*teens OR artist:"Wham!"
     </p></td>
 </tr>
 
-<tr><td>cased</td>
-<td>attribute</td>
-<td><p id="cased">
-  Enable case-sensitive matching. Only relevant for string attributes.
-</p></td>
+<tr><td>uncased</td>
+    <td>index, attribute</td>
+    <td><p id="uncased">
+        Use case-insensitive matching (the default).
+    </p></td>
 </tr>
 
-<tr><td>uncased</td>
+<tr><td>cased</td>
 <td>index, attribute</td>
-<td><p id="uncased">
-  Enable case-insensitive matching. This is the default for all string fields.
+<td><p id="cased">
+  Use case-sensitive matching. Usually only used together
+  with <code>match: exact</code> or <code>match: word</code> modes.
+  When using <code>match: text</code>, note that if you are using a custom
+  <a href="../linguistics.html#creating-a-custom-linguistics-implementation">linguistics implementation</a>,
+  this will only have effect for string index fields if that implementation produces cased tokens.
 </p></td>
 </tr>
 
@@ -3626,9 +3780,9 @@ foo AND (artist:"'N Sync" OR artist:"*NSYNC" OR artist:A*teens OR artist:"Wham!"
 <tr><td>max-occurrences</td>
 <td>index</td>
 <td><p id="max-occurrences">
-  Configure the max number of occurrences that will be indexed for
+  Configure the maximum number of occurrences that will be indexed for
   each unique token/term in the field for a given document.
-  It this limit is reached, consecutive occurrences
+  If this limit is reached, consecutive occurrences
   of the same token/term are ignored for that document.
   The default value is 10000.
 </p><p>
@@ -3639,7 +3793,7 @@ foo AND (artist:"'N Sync" OR artist:"*NSYNC" OR artist:A*teens OR artist:"Wham!"
   query operators
   to query documents with large field values (see <a href="#max-length">max-length</a>)
   that contain more than 10000 occurrences of common tokens/terms.
-  When using these operators it is only possible to match among the
+  When using these operators, it is only possible to match among the
   first <em>max-occurrences</em> of a token/term in a document.
 </p></td>
 </tr>
@@ -3658,7 +3812,7 @@ foo AND (artist:"'N Sync" OR artist:"*NSYNC" OR artist:A*teens OR artist:"Wham!"
 <td>index</td>
 <td><p id="gram">
   This field is matched using n-grams.
-  For example, with the default gram size 2 the string "hi blue" is tokenized to "hi bl lu ue"
+  For example, with the default gram size 2, the string "hi blue" is tokenized to "hi bl lu ue"
   both in the index and in queries to the index.
   </p><p>
   N-gram matching is useful mainly as an alternative to
@@ -3668,8 +3822,8 @@ foo AND (artist:"'N Sync" OR artist:"*NSYNC" OR artist:A*teens OR artist:"Wham!"
   the precision offset may not be of much importance.
   Grams consume more resources than other matching methods
   because both indexes and queries will have more terms,
-  and the terms contains repetition of the same letters.
-  On the other hand, CPU intensive CJK segmentation is avoided.
+  and the terms contain repetition of the same letters.
+  On the other hand, CPU-intensive CJK segmentation is avoided.
   </p><p>
   It may also be used for substring matching in general.
 </p></td>
@@ -3678,7 +3832,7 @@ foo AND (artist:"'N Sync" OR artist:"*NSYNC" OR artist:A*teens OR artist:"Wham!"
 <tr><td>gram-size</td>
 <td>index</td>
 <td><p id="gram-size">
-  A positive, nonzero, number, default 2.
+  A positive, nonzero number, default 2.
   Sets the gram size when gram matching is used. Example:</p>
 <pre>
 match {
@@ -3697,7 +3851,7 @@ match {
 <h2 id="rank">rank</h2>
 <p>Contained in <a href="#field">field</a>, <a href="#struct-field">struct-field</a> or
 <a href="#rank-profile">rank-profile</a>.
-Set the kind of ranking calculations which will be done for the field. Even though the
+Set the kind of ranking calculations that will be done for the field. Even though the
 actual ranking expressions decide the ranking, this setting tells Vespa which preparatory calculations
 and which data structures are needed for the field.
 <pre>
@@ -3721,14 +3875,18 @@ The following ranking settings are supported in addition to the default:
     This saves CPU during matching, but only a few simple ranking features will be available for the field.
     This setting is appropriate for fields typically used for filtering or simple boosting purposes,
     like filtering or boosting on the language of the document.
-
-    For <em>index</em> fields, this setting does <span style="text-decoration: underline;">not</span> change
-    index formats but helps choose the most compact representation when matching
-    against the field.
-
-    For <em>attribute</em> fields with <em>fast-search</em> this setting builds additional
-    posting list representations (bit vectors) which can speed up query evaluation significantly.
-
+  </p>
+  <ul>
+    <li>
+      For <em>index</em> fields, this setting does <span style="text-decoration: underline;">not</span> change index formats
+      but helps choose the most compact representation when matching against the field.
+    </li>
+    <li>
+      For <em>attribute</em> fields with <em>fast-search</em> this setting builds additional
+      posting list representations (bit vectors) can significantly speed up query evaluation.
+    </li>
+  </ul>
+  <p>
     See <a href="../performance/feature-tuning.html#when-to-use-fast-search-for-attribute-fields">feature tuning</a> and
     <a href="../performance/practical-search-performance-guide.html">the practical search performance guide</a>.
   </p>
@@ -3749,18 +3907,89 @@ The following ranking settings are supported in addition to the default:
   for how to annotate query terms as filters.
 </p>
 
+<h3 id="rank-filter-threshold">filter-threshold</h3>
+<p>
+    Contained in a <a href="#rank-profile">rank-profile</a>.
+    Used to optimize query performance when searching large text <a href="../schemas.html#indexing">index</a> fields,
+    by allowing a per query combination of <a href="#filter">rank: filter</a> and <a href="#normal">rank: normal</a> behavior.
+    See <a href="#filter-threshold">profile-level filter-threshold</a> for how to use the same value for all <em>index</em> fields.
+</p>
+<pre>
+rank [field-name] {
+    filter-threshold: 0.05
+}
+</pre>
+<table class="table">
+    <thead>
+    <tr><th>Setting</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+    <tr><td>filter-threshold</td><td>
+    <p>
+        Threshold value (in the range [0.0, 1.0]) deciding when matching in this <em>index</em> field should be treated as a filter.
+        This happens for query terms with <a href="../glossary.html#estimated-hit-ratio">estimated hit ratios</a> (in the
+        range [0.0, 1.0]) that are above the <em>filter-threshold</em>.
+        Then, fast bitvector data structures are used, similar to when the field is set to <a href="#filter">rank: filter</a>.
+        This saves CPU and Disk I/O during matching and typically results in faster query evaluation,
+        with the downside being that only a boolean signal is available for ranking (the document being a match or not).
+        <a href="bm25.html">BM25</a> handles this by assuming one occurrence of the query term in the document,
+        and the field length being equal to the average field length.
+    </p>
+    <p>
+        Use this to optimize query performance when searching large text <em>index</em> fields with e.g.
+        the <a href="../using-wand-with-vespa.html#weakand">weakAnd</a> query operator and <a href="bm25.html">BM25</a> ranking.
+        Query terms that are common in the corpus (e.g., stopwords) are treated as filters with faster matching and simplified ranking,
+        while other query terms are handled as usual with full ranking.
+    </p>
+    <p>
+        In testing with various text datasets (e.g., Wikipedia),
+        a <em>filter-threshold</em> setting of 0.05 has been shown to be a good starting point.
+        <a href="/en/performance/feature-tuning.html#posting-lists">Read more</a>.
+    </p>
+    <p>
+        This setting is only relevant for <a href="../schemas.html#indexing">index</a> fields,
+        and cannot be used in combination with <a href="#filter">rank: filter</a>.
+        Has no effect in <a href="../streaming-search.html#differences-in-streaming-search">streaming search</a>.
+    </p>
+    </td></tr>
+    </tbody>
+</table>
+
+
+<h3 id="rank-element-gap">element-gap</h3>
+<p>
+    Contained in a <a href="#rank-profile">rank-profile</a>. Used to specify the gap between positions in adjacent elements in multi-value fields. The default value is <code>infinity</code>. It should be specified as <code>infinity</code> or as a positive integer number.
+</p>
+<p>
+  Consider an <code>array&lt;string&gt;</code> field with three elements <code>["a c", "x b x a x x x x x x b", "x x d"]</code>.
+  Normally, distance calculation is only performed within an element, thus the minimum forward distance between occurrences for terms <em>a</em> and <em>b</em> is 7.
+  By setting the <code>element-gap</code> for the field to 0, adjacent elements are considered and the minimum forward distance between occurrences for terms <em>a</em> and <em>b</em> becomes 3.
+  The minimum distance between occurrences for terms <em>c</em> and <em>d</em> is not calculated since they are not in adjacent elements.
+</p>
+<p>
+  The <code>element-gap</code> setting affects the <a href="/en/reference/rank-features.html#nativeProximity">nativeProximity</a> rank feature,
+  the <a href="/en/reference/query-language-reference.html#near">near</a> query operator
+  and the <a href="/en/reference/query-language-reference.html#onear">onear</a> query operator.
+</p>
+<pre>
+rank [field-name] {
+    element-gap: 0
+}
+</pre>
+<p>No restart or reindexing is required when changing this setting, it is immediately effective.</p>
+
 
 
 <h2 id="query-command">query-command</h2>
 <p>Contained in <a href="#fieldset">fieldset</a>, <a href="#field">field</a> or
 <a href="#struct-field">struct-field</a>.
 Specifies a function to be performed on query terms to the indexes of this field when searching.
-The Search Container server has support for writing Vespa Searcher plugins which processes these commands.</p>
+The Search Container server has support for writing Vespa Searcher plugins that process these commands.</p>
 <pre>
 query-command: [an identifier or quoted string]
 </pre>
 
-<p>If you write a plugin searcher which needs some index-specific
+<p>If you write a plugin searcher that needs some index-specific
 configuration parameter, that parameter can be set here.</p>
 
 <p>There is one built-in query-command available: <code>phrase-segmenting</code>.
@@ -3785,8 +4014,8 @@ The field name can be skipped inside fields. Defined rank types are:
   <tr>
     <td>identity</td>
     <td>
-      Used for fields which contains only what this document
-      <em>is</em>, e.g. "Title". Complete identity hits will get a
+      Used for fields that contains only what this document
+      <em>is</em>, e.g., "Title". Complete identity hits will get a
       high rank.
     </td>
   </tr><tr>
@@ -3794,14 +4023,14 @@ The field name can be skipped inside fields. Defined rank types are:
     <td>
       Some text which is (only) about this document,
       e.g. "Description". About hits get high rank on partial
-      matches and higher for matches early in the text and
-      repetitive matches.
+      matches and higher for matches early in the text and repetitive matches.
       This is the default rank type.
     </td>
   </tr><tr>
     <td>tags</td>
     <td>
-      Used for simple tag fields of type tag. The tags rank type uses a logarithmic table to give more relative boost in the low range: As tags are added they should have significant impact on rank score, but as more and more tags are added, each new tag should contribute less.
+      Used for simple tag fields of type tag. The tags rank type uses a logarithmic table to give more relative boost in the low range:
+      As tags are added, they should have a significant impact on the rank score, but as more and more tags are added, each new tag should contribute less.
     </td>
   </tr><tr>
     <td>empty</td>
@@ -3813,12 +4042,141 @@ The field name can be skipped inside fields. Defined rank types are:
   </tbody>
 </table>
 <p>
-  For <code>nativeRank</code> one can specify a rank type per field.
+  For <code>nativeRank</code>, one can specify a rank type per field.
   If the supported rank types do not meet requirements,
   one can explicitly configure the native rank features using rank-properties.
   See the <a href="../reference/nativerank.html">native rank reference</a> for more information.
 </p>
 
+
+<h2 id="weakand">weakand</h2>
+<p>
+  Contained in <a href="#rank-profile">rank-profile</a>.
+</p>
+<p>
+  Tunes the <a href="../using-wand-with-vespa.html#weakand">weakAnd</a> algorithm to automatically
+  exclude terms and documents with expected low query significance based on document frequency
+  statistics present in the document corpus. This makes matching faster at the cost of potentially
+  reduced recall.
+</p>
+<pre>
+weakand {
+    [body]
+}
+</pre>
+<p>
+  Note that all document frequency calculations are done using <em>content node-local</em> document
+  statistics (i.e. <a href="../significance.html#global-significance-model">global significance</a>
+  does not have an effect). This means results may differ across different content nodes and/or
+  content node groups.
+</p>
+<p>
+The body of a <code>weakand</code> statement consists of:
+</p>
+<table class="table">
+  <thead>
+    <tr>
+      <th>Property</th>
+      <th>Occurrence</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="white-space: nowrap">stopword-limit</a></td>
+      <td>Zero to one</td>
+      <td>
+        <p id="weakand-stopword-limit">
+          A number in the range [0, 1]. Represents the maximum
+          <a href="../glossary.html#document-frequency-normalized">normalized document frequency</a> a query term can have in the
+          corpus (i.e. the ratio of all documents where the term occurs at least once) before
+          it's considered a stopword and dropped entirely from being a part of the
+          <code>weakAnd</code> evaluation. This makes matching faster at the cost of
+          potentially producing more hits. Dropped terms are not exposed as part of ranking.
+        </p>
+        <p>Example:</p>
+        <pre>stopword-limit: 0.60</pre>
+        <p>This will drop all query terms that occur in at least 60% of the documents.</p>
+        <p>
+          Using <code>stopword-limit</code> is similar to explicitly removing stopwords
+          from the query up front, but has the benefit of dynamically adapting to the
+          actual document corpus and not having to know—or specify—a set of stopwords.
+          <a href="/en/performance/feature-tuning.html#posting-lists">Read more</a>.
+        </p>
+      </td>
+    </tr>
+    <tr>
+      <td style="white-space: nowrap">adjust-target</td>
+      <td>Zero to one</td>
+      <td>
+        <p id="weakand-adjust-target">
+          A number in the range [0, 1] representing
+          <a href="../glossary.html#document-frequency-normalized">normalized document frequency</a>.
+          Used to derive a per-query document score threshold, where documents scoring
+          lower than the threshold will not be considered as potential hits from the
+          <code>weakAnd</code> operator. The score threshold is selected to be equal to
+          that of the query term whose document frequency is <em>closest</em> to the
+          configured <code>adjust-target</code> value.
+        <p>
+        <p>
+          This can be used to efficiently <em>exclude</em> documents that only match terms that
+          occur very frequently in the document corpus. Such terms are likely to be stopwords
+          that have low semantic value for the query, and excluding documents only containing
+          them is likely to have only a minor impact on recall.
+        </p>
+        <p>
+          This makes overall matching faster by reducing the number of hits produced by
+          the <code>weakAnd</code> operator.
+        </p>
+        <p>Example:</p>
+        <pre>adjust-target: 0.01</pre>
+        <p>
+          This excludes documents that only have terms that occur in more than approximately 1%
+          of the document corpus. The actual threshold is query-specific and based on the query
+          term score whose document frequency is closest to 1%.
+        </p>
+        <p>
+          <code>adjust-target</code> can be used together with <a href="#weakand-stopword-limit">stopword-limit</a>
+          to efficiently prune both terms and documents with low significance when processing queries.
+          <a href="/en/performance/feature-tuning.html#posting-lists">Read more</a>.
+        </p>
+      </td>
+    </tr>
+    <tr>
+      <td style="white-space: nowrap">allow-drop-all</td>
+      <td>Zero to one</td>
+      <td>
+        <p id="weakand-allow-drop-all">
+          A boolean value. The default behavior of <code>weakAnd</code> is to always keep at least one term (the least common one) even though
+          it is considered a stopword. This is to avoid dropping all query terms in order to make sure that some hits are produced.
+        </p>
+        <p>
+          If set to <code>true</code>, the <code>weakAnd</code> operator
+          will allow removal of all query terms if they are all considered stopwords (i.e., if
+          <code>stopword-limit</code> is set and all query terms are above the limit).
+        <p>
+          This may be desired (and significantly improve query performance) if <code>weakAnd</code> is used together with another query operator,
+          e.g. the <a href="/en/nearest-neighbor-search.html#querying-using-nearestneighbor-query-operator">nearestNeighbor</a> operator.
+        </p>
+        <p>
+          Be aware that if this is set to <code>true</code> and all query terms are
+          considered stopwords, the <code>weakAnd</code> operator will not produce <em>any</em>
+          hits. And by extension, if <code>weakAnd</code> is used by itself, the query may return no hits.
+        </p>
+        <p>Example:</p>
+        <pre>weakand-allow-drop-all: true</pre>
+        <p>
+          This overrides the default behavior of <code>weakAnd</code> and allows all query terms to be dropped if they are all considered stopwords.
+        </p>
+        <p>
+          {% include important.html content="
+      Defaults to <code>false</code> if not specified.
+      "%}
+        </p>
+      </td>
+    </tr>
+  </tbody>
+</table>
 
 
 <h2 id="summary-to">summary-to</h2>
@@ -3826,7 +4184,7 @@ The field name can be skipped inside fields. Defined rank types are:
   {% include deprecated.html content="Use <a href='#document-summary'>document-summary</a> instead."%}
   Contained in <a href="#field">field</a> or
   <a href="#struct-field">struct-field</a>.
-  Specifies the name of the document summaries which should contain this field.
+  Specifies the name of the document summaries that should contain this field.
 </p>
 <pre>
 summary-to: [summary-name], [summary-name], &hellip;
@@ -3835,7 +4193,6 @@ summary-to: [summary-name], [summary-name], &hellip;
 Fields with summary will always be part of the default summary regardless of this setting. Use explicit <a href="#document-summary">document-summary</a> instead.
 See also <a href="../document-summaries.html">document summaries</a>.
 </p>
-
 
 
 <h2 id="summary">summary</h2>
@@ -3874,7 +4231,7 @@ Only supported for <a href="#indexing-index">index</a> fields of type string or 
 </tr>
 <tr><td>dynamic</td>
   <td>Zero to one</td>
-<td>Make the value returned in results from this summary field be a <em>dynamic abstract</em> of the source
+<td>Make the value returned in results from this summary field a <em>dynamic abstract</em> of the source
   field by extracting fragments of text around matching query terms. Matching query terms will also be highlighted, in
   similarity with the bolding feature.
   This highlighting is not affected by the query-argument <span class="code">bolding</span>.
@@ -3891,7 +4248,7 @@ Only supported for <a href="#indexing-index">index</a> fields of type string or 
     <p id="source">
       Specifies the name of the field or fields from which the value of this summary field should be fetched.
       If multiple fields are specified, the value will be taken from the first field if that has a value,
-      from the second if the first one is empty and so on.
+      from the second if the first one is empty, and so on.
     </p>
 <pre>
 source: [field-name], [field-name], &hellip;
@@ -3908,11 +4265,11 @@ source: [field-name], [field-name], &hellip;
 </tr>
 <tr><td>to</td>
   <td>Zero to one</td>
-  <td>Specifies the name of the document summaries this should be included in.
+  <td>Specifies the name of the document summaries that this should be included in.
 <pre>
 to: [document-summary-name], [document-summary-name], &hellip;
 </pre>
-  This can only be specified in fields, not in explicit document
+  This can only be specified in fields, not in the explicit document
   summaries. When this is not specified, the field will go to the
   <code>default</code> document summary.</td>
 </tr>
@@ -3925,18 +4282,38 @@ to: [document-summary-name], [document-summary-name], &hellip;
     <a href="#weightedset">weightedset</a>,
     <a href="#array">array of struct</a> or
     <a href="#map">map type</a> field are returned as part of document summary.
-    For array of struct or map type fields this is typically used in accordance with the
+    For array of struct or map type fields, this is typically used in accordance with the
     <a href="query-language-reference.html#sameelement">sameElement</a> operator,
-    but it can also be used when searching directly on a sub struct field.
-    Is also supported when the field is <a href=#import-field>imported</a>.
-    Is not supported for <a href="#index">index</a> fields in indexed search.
-    Example .sd files from system tests:
+    but it can also be used when searching directly on a sub-struct field.
+    It is also supported when the field is <a href=#import-field>imported</a>.
   </p>
+  <p>See <a href="#map">example use</a> and example schemas:</p>
   <ul>
     <li><a href="https://github.com/vespa-engine/system-test/blob/master/tests/search/matched_elements_only/indexed/test.sd">
       matched elements only</a></li>
     <li><a href="https://github.com/vespa-engine/system-test/blob/master/tests/search/struct_and_map_types/attribute_fields/test.sd">
       array of struct and map type</a></li>
+  </ul>
+</td>
+</tr>
+<tr><td style="white-space: nowrap">select-elements-by</td>
+  <td>Zero to one</td>
+  <td>
+  <p id="select-elements-by">
+    Use a summary feature to control which elements in an
+    <a href="#array">array of primitive</a> or
+    <a href="#array">array of struct</a> field are returned as part of document summary.
+  </p>
+<pre>
+select-elements-by: &lt;summary-feature-name&gt;
+</pre>
+  <p>
+    The summary feature used must be a tensor with a single mapped
+    dimension. An element will be returned if its id is a label along
+    the mapped dimension of this tensor.
+  </p>
+  <ul>
+    <li><a href="https://github.com/vespa-engine/system-test/blob/master/tests/search/chunk_selection/test.sd">schema example</a></li>
   </ul>
 </td>
 </tr>
@@ -3949,8 +4326,8 @@ of the tokens indexed in the source field. Multiple tokens at the same
 location are put into a nested array.
 </p>
 <p>
-The source field must be specified and it must be
-an <a href="#indexing-index">index</a> or
+The source field must be specified,
+and it must be an <a href="#indexing-index">index</a> or
 <a href="#indexing-attribute">attribute</a> field of type string,
 array&lt;string&gt; or weightedset&lt;string&gt;. If the source field
 is of type weightedset&lt;string&gt; then the summary field is
@@ -4022,33 +4399,18 @@ field tag type weightedset&lt;string&gt; {
 <tr><td>remove-if-zero</td>
   <td>Zero to one</td>
   <td>This is the companion of <code>create-if-nonexistent</code> for the converse case:
-    By default keys may have zero as weight.
-    With this turned on, keys whose weight is adjusted (or set) to zero, will be removed.</td>
+    By default, keys may have zero as weight.
+    With this turned on, keys whose weight is adjusted (or set) to zero will be removed.</td>
 </tr>
 </tbody>
 </table>
-
-
-
-<h2 id="annotation">annotation</h2>
-<p>
-Contained in <a href="#schema">schema</a>.
-Defines an annotation type, to be used by the <a href="../annotations.html">Annotations API</a>.
-A name of the annotation is mandatory, the body is optional.
-</p>
-<pre>
-annotation [name] {
-    [body]
-}
-</pre>
-
 
 
 <h2 id="import-field">import field</h2>
 <p>
 Contained in <a href="#schema">schema</a>.
 Using a <a href="#reference">reference</a> to a document type,
-import a field from that document type into this schema to be used for matching, ranking, grouping and sorting.
+import a field from that document type into this schema to be used for matching, ranking, grouping, and sorting.
 Only attribute fields can be imported.
 Importing fields are not supported in
 <a href="../streaming-search.html#differences-in-streaming-search">streaming search</a>.
@@ -4061,7 +4423,7 @@ The imported field inherits all but the following properties from the parent fie
 </ul>
 <p>
 Refer to <a href="../parent-child.html">parent/child</a> for a complete example.
-Note that the imported field is put <span style="text-decoration: underline">outside</span> of the document type:
+Note that the imported field is put <span style="text-decoration: underline">outside</span> the document type:
 </p>
 <pre>
 schema myschema {
@@ -4090,7 +4452,7 @@ Extra restrictions apply for some of the field types:
             Only the struct fields with attributes will be visible.</td>
     </tr><tr>
         <td>map of struct</td>
-        <td>Can be imported if the key field has an attribute and
+        <td>Can be imported if the key field has an attribute, and
             at least one of the struct fields has an attribute.
             All struct fields with attributes must have primitive types.
             Only the key field and the struct fields with attributes will be visible.</td>
@@ -4181,10 +4543,10 @@ Changes:
   <tbody>
   <tr><th>Add a new document field</th>
   <td>
-  Add a new document field as index, attribute, summary or any combinations of these.
+  Add a new document field as index, attribute, summary or any combination of these.
   Existing documents will implicitly get the new field with no content.
   Documents fed after the change can specify the new field.
-  If the field has existed with same type earlier,
+  If the field has existed with the same type earlier,
   then old content <em>may or may not</em> reappear
   </td></tr>
 
@@ -4262,7 +4624,7 @@ Changes:
   <tr><th>Add or remove a schema</th>
   <td>
   Removing a schema definition file will make <a href="../proton.html">proton</a>
-  drop all documents of that type - subsequently releasing memory and disk.
+  drop all documents of that type, subsequently releasing memory and disk.
   </td></tr>
   </tbody>
 </table>
@@ -4302,13 +4664,14 @@ Changes:
 
   <tr><th>Change the hnsw index settings for a tensor attribute field</th>
   <td>
-  Add or remove the <a href="#index-hnsw">hnsw index</a> on a tensor attribute field,
-  or change the settings of the index.
+  Adding or removing the <a href="#index-hnsw">hnsw index</a> on a tensor attribute field,
+  or changing the <code>distance-metric</code> or <code>max-links-per-node</code> requires a restart to rebuild the index.
+  Changing <code>neighbors-to-explore-at-insert</code> requires a restart, but does not rebuild the index.
   </td></tr>
 
   <tr><th>Change the distance metric for a tensor attribute field</th>
   <td>
-  Change, add or remove the <a href="#distance-metric">distance metric</a> on a tensor attribute field.
+  Change, add, or remove the <a href="#distance-metric">distance metric</a> on a tensor attribute field.
   If no distance metric is specified, <em>euclidean</em> is used as the default.
   </td></tr>
 
@@ -4344,7 +4707,7 @@ In cluster 'mycluster' of type 'search':
 
 <h3 id="changes-that-require-reindexing">Changes that require reindexing</h3>
 <p>
-All of the changes listed below require <a href="../operations/reindexing.html">reindexing</a>
+All the changes listed below require <a href="../operations/reindexing.html">reindexing</a>
 of all documents. Unlike re-feed, which requires an external source of data, reindexing is done
 using documents stored in Vespa, and is automatic (once triggered). It can also run concurrently
 with feed and serving, but until reindexing is complete, affected fields will be empty
@@ -4354,7 +4717,8 @@ or have potentially wrong annotations not matching the query processing. Procedu
   <li>Run <code>vespa prepare</code> on the changed application.
     Output specifies which reindexing actions are needed
   <li>Run <code>vespa activate</code></li>
-  <li>Trigger reindexing for the indicated document types and clusters</li>
+  <li><a href="deploy-rest-api-v2.html#reindex">Enable reindexing</a> for the indicated document types and clusters</li>
+  <li>Run <code>vespa prepare</code> and <code>vespa activate</code> again to start reindexing process</li>
 </ol>
 <p>Changes:</p>
 <table class="table">
@@ -4371,10 +4735,6 @@ or have potentially wrong annotations not matching the query processing. Procedu
         will avoid disk bloat due to unneeded annotations.
       </td></tr>
 
-      <tr><th>Change fields from static to dynamic summary, or vice versa</th>
-      <td><!-- ToDo -->
-      </td></tr>
-
       <tr><th>Switch stemming/normalizing on or off</th>
       <td>
         <p>
@@ -4386,11 +4746,7 @@ or have potentially wrong annotations not matching the query processing. Procedu
         than the one used when doing stemming/normalizing of the query terms."%}
       </td></tr>
 
-      <tr><th>Switch bolding on or off</th>
-      <td><!-- ToDo -->
-      </td></tr>
-
-      <tr><th>Add, change or remove match settings for a field</th>
+      <tr><th>Add, change, or remove match settings for a field</th>
       <td>
         <p>
         Example: Adding <code>match: word</code> to a field.
@@ -4407,7 +4763,7 @@ or have potentially wrong annotations not matching the query processing. Procedu
         <th>Add or remove a new non-attribute document field from document summary</th>
         <td>
           <p id="add-or-remove-a-new-non-attribute-document-field-from-document-summary">
-            A change adding an <a href="../schemas.html#indexing">index or summary field</a> field
+            A change adding an <a href="../schemas.html#indexing">index or summary</a> field
             (without <a href="../attributes.html">attribute</a>)
             with a new name to a summary class using <a href="#source">source</a> requires re-index:
           </p>
@@ -4457,8 +4813,8 @@ Reindex document type 'test' in cluster 'mycluster' because:
 
 <h3 id="changes-that-require-re-feed">Changes that require re-feed</h3>
 <p>
-All of the changes listed below require re-feeding of all documents.
-Unless a change is listed in the above sections treat it as if it was listed here.
+All the changes listed below require re-feeding of all documents.
+Unless a change is listed in the above sections, treat it as if it were listed here.
 Until re-feed is complete, affected fields will be empty
 or have potentially wrong annotations not matching the query processing. Procedure:
 </p>

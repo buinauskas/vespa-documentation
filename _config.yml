@@ -1,4 +1,4 @@
-# Copyright Vespa.ai. Licensed under the terms of the Apache 2.0 license. See LICENSE in the project root.
+# Copyright Vespa.ai. All rights reserved.
 # Welcome to Jekyll!
 #
 # This config file is meant for settings that affect your whole blog, values
@@ -21,6 +21,8 @@ description: >- # this means to ignore newlines until "baseurl:"
 url: "https://docs.vespa.ai" # the base hostname & protocol for your site, e.g. http://example.com
 # Remove this before publishing on github.com
 repository: vespa/documentation
+repository_url: "https://github.com/vespa-engine/documentation"
+google_tag_manager: "GTM-WM6MPVZP"
 
 # Build settings
 sass:
@@ -33,8 +35,12 @@ plugins:
 kramdown:
   smart_quotes: ["apos", "apos", "quot", "quot"]
 
+# Keep markdown files in output
+keep_files:
+  - "*.html.md"
+
 # Exclude from processing.
-# The following items will not be processed, by default. Create a custom list
+# The following items will not be processed by default. Create a custom list
 # to override the default setting.
 exclude:
   - Gemfile
@@ -51,6 +57,7 @@ exclude:
   - "*.pem"
   - "*.yaml"
   - "*.py"
+  - llms.txt
 
 search:
   namespace: "open"
@@ -58,24 +65,36 @@ search:
   do_feed  : true
   do_index_removal_before_feed: false
   feed_endpoints:
-    # vespacloud-docsearch // aws // us-east-1c
+    # This config needs to be the same in all files starting with "_" in:
+    # vespa-engine/documentation, vespa-engine/pyvespa, vespa-engine/sample-apps,
+    # vespaai/blog and vespaai/cloud-site
+    #
+    # vespacloud-docsearch | prod.aws-us-east-1c
     - url: https://b671e1db.b68a8c0d.z.vespa-app.cloud/
       indexes:
         - open_index.json
-    # vespacloud-docsearch // gcp // us-central1-f
-    - url: https://a341952a.b68a8c0d.z.vespa-app.cloud/
-      indexes:
-        - open_index.json
-    # vespacloud-docsearch // aws // eu-west-1a
+    # vespacloud-docsearch | prod.aws-eu-west-1a
     - url: https://ed053d52.b68a8c0d.z.vespa-app.cloud/
       indexes:
         - open_index.json
-    # vespacloud-docsearch // aws (enclave) // us-west-1c
-    - url: https://f10d3607.b68a8c0d.z.vespa-app.cloud/
+    # vespacloud-docsearch | prod.gcp-us-central1-f
+    - url: https://a341952a.b68a8c0d.z.vespa-app.cloud/
       indexes:
         - open_index.json
-    # vespacloud-docsearch // gcp (enclave) // us-central1-f
-    - url: https://ac5f3559.b68a8c0d.z.vespa-app.cloud/
+    # vespacloud-docsearch | prod.gcp-us-central1-a
+    - url: https://ba97230a.b68a8c0d.z.vespa-app.cloud/
+      indexes:
+        - open_index.json
+    # vespacloud-docsearch.cloud-enclave | prod.aws-us-east-1c
+    - url: https://cd560c23.b68a8c0d.z.vespa-app.cloud/
+      indexes:
+        - open_index.json
+    # vespacloud-docsearch.cloud-enclave | prod.aws-eu-west-1a
+    - url: https://b24dd625.b68a8c0d.z.vespa-app.cloud/
+      indexes:
+        - open_index.json
+    # vespacloud-docsearch.cloud-enclave | prod.gcp-us-central1-f
+    - url: https://ab1f72fd.b68a8c0d.z.vespa-app.cloud/
       indexes:
         - open_index.json
 

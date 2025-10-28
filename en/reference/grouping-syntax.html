@@ -1,8 +1,6 @@
 ---
-# Copyright Vespa.ai. Licensed under the terms of the Apache 2.0 license. See LICENSE in the project root.
+# Copyright Vespa.ai. All rights reserved.
 title: "Grouping Reference"
-redirect_from:
-- /documentation/reference/grouping-syntax.html
 ---
 
 
@@ -23,7 +21,7 @@ particularly if the set of hits to be processed is large, as more data is evalua
 Group query results using a custom expression (using the <code>group</code> clause):
 </p>
 <ul>
-  <li>A numerical constant</li>
+  <li>A numerical or string constant (e.g., <code>group(1)</code> or <code>group("all")</code>) which makes one bucket with everything</li>
   <li>A document <a href="../attributes.html">attribute</a></li>
   <li>
     A function over another expression (<code>xorbit</code>, <code>md5</code>, <code>cat</code>,
@@ -99,6 +97,76 @@ Note that the key source attribute must be single value and have the same data t
 
 
 
+<h2 id="filtering-groups">Filtering groups</h2>
+<p>
+When grouping on multivalue attributes, it may be useful to filter the groups so
+that only some specific values are collected. This can be done by adding a
+filter. The <code>filter</code> clause expects a filter <em>predicate</em>:
+<ul>
+  <li> <a href="#regex-filter">regex("regular expression", input-expression</em>)</a></li>
+  <li> <a href="#range-filter">range(min-limit, max-limit, input-expression</em>)</a></li>
+  <li> <a href="#range-filter">range(min-limit, max-limit, input-expression</em>, bool, bool)</a></li>
+  <li> <a href="#logical-predicates-filter">not <em>predicate</em></a></li>
+  <li> <a href="#logical-predicates-filter"><em>predicate</em> and <em>predicate</em></a></li>
+  <li> <a href="#logical-predicates-filter"><em>predicate</em> or  <em>predicate</em></a></li>
+</ul>
+</p>
+
+<h3 id="regex-filter">Regex filter</h3>
+<p>
+Use a regular expression to match the input, and include only
+documents that match in the grouping.  The input will usually be the
+same -expression as in the "group" clause.
+Example:
+<pre>all( group(my_array) filter(regex("foo.*", my_array)) ...)</pre>  Here,
+each value in <em>my_array</em> is considered, but only the values that start
+with a "foo" prefix are collected in groups; All others are ignored.
+See <a href="/en/grouping.html#structured-grouping">example</a>.
+</p>
+
+<h3 id="range-filter">Range filter</h3>
+<p>
+Use a <code>range</code> filter to match documents where a field value is between a lower and an upper bound. Example:
+<pre>all( group(some_field) filter(range(1990, 2012, year)) ...)</pre>
+Here, the lower bound is <em>inclusive</em> (year &ge; 1990) and the upper bound is <em>exclusive</em> (year &lt; 2012).
+Use optional bools at the end to control if the lower and upper bounds are inclusive respectively.
+The first bool sets the lower bound inclusive, and the second sets upper bound inclusive.
+<pre>all( group(some_field) filter(range(1990, 2012, year, true, true)) ...)</pre>
+Here, both lower and upper bound are inclusive.
+</p>
+
+<h3 id="logical-predicates-filter">Logical predicates</h3>
+<p>
+ Use <code>not</code> to negate another filter expression. It takes a single
+ sub-filter and matches when the sub-filter does not. Example:
+<pre>all( group(my_field) filter( not regex("bar.*", my_other_field)) ...)</pre>
+Use <code>or</code> to perform a logical disjunction across two
+sub-filters. The combined filter matches if any of the sub-filters evaluate to
+true. Example:
+<pre>all( group(my_field) filter( regex("bar.*", my_field) or regex("baz.*", my_third_field) ) ...)</pre>
+Use <code>and</code> to perform a logical conjunction across two
+sub-filters. The combined filter matches only if all of the sub-filters evaluate
+to true. Example:
+<pre>all( group(my_field) filter( regex("bar.*", my_other_field) and regex("baz.*", my_third_field) ) ...)</pre>
+These logical predicates can be nested to create complex filter conditions.
+Filter expressions follow <em>conventional precedence</em>
+rules: <code>not</code> is evaluated before <code>and</code>,
+and <code>and</code> is evaluated before <code>or</code>. Operators of the same
+precedence are evaluated left-to-right. Use parentheses <code>(...)</code> to
+force a different grouping when needed.
+
+Example:
+<pre>
+all(
+    group(my_field)
+    filter( (regex("bar.*", some_field) or regex("baz.*", other_field)) and not regex(".*foo", some_field))
+    each(...)
+)
+</pre>
+</p>
+
+
+
 <h2 id="order">Order / max</h2>
 <p>
 Each level of grouping may specify how to order its groups (using <code>order</code>):
@@ -139,7 +207,7 @@ it will reproduce the exact same result as the one that contained it.
 There are zero or one <em>prev</em>/<em>next</em> continuation per group- and hit list.
 Submit any number of these to retrieve the next/previous pages of the corresponding lists
 </p><p>
-Any number of continuations can be combined in a query, but the first must always be the <em>this</em> continuation.
+Any number of continuations can be combined in a query, but the first must always be the <em>this</em>-continuation.
 E.g. one may simultaneously move both to the next page of one list, and the previous page of another.
 </p>
 {% include note.html content="If more than one continuation object are provided for the same group- or hit-list,
@@ -181,7 +249,7 @@ The outputs created by that each clause will be identified by this label.
 
 <h2 id="precision">Precision</h2>
 <p>
-The is the number of intermediate groups returned from each content node
+The number of intermediate groups returned from each content node
 during expression evaluation to give the container node more data to consider
 when selecting the groups that are to be evaluated further:
 <code>each(...) precision(1000)</code>
@@ -227,6 +295,7 @@ that belong to that group (using the <code>output</code> operation):
   <li>The documents in a group, retrieved using a specified summary class</li>
   <li>The count of documents in a group</li>
   <li>The sum, average, min, max, xor or standard deviation of an expression</li>
+  <li>Multiple quantiles of an expressions value</li>
 </ul>
 <p>
 When all arguments are numeric, the result type is resolved by looking at the argument types.
@@ -240,6 +309,12 @@ Using sum, max on a multivalued attribute:
 Doing an operation such as <code>output(sum(myarray))</code> will run the sum over each element value in each document.
 The result is the sum of sums of values.
 Similarly <code>max(myarray)</code> will yield the maximal element over all elements in all documents, and so on.
+</p><p>
+Compute quantiles by listing the desired quantile values (comma-separated) in brackets, followed by a comma and the expression (e.g., a field):
+<pre>all( group(city) each(output(quantiles([0.5], delivery_days) as(median_delivery_days) ) ) )</pre>
+to compute the median, or
+<pre>all( group(city) each(output(quantiles([0.5, 0.9], delivery_days))) )</pre>
+This computes the median (p50) and 90th percentile (p90) time to delivery in days per city. Note that quantiles are computed using <a href="https://datasketches.apache.org/docs/KLL/KLLSketch.html">KLL Sketch</a>, so they are approximate.
 </p><p>
 Multivalue fields such as maps, arrays can be used for grouping.
 However, using aggregation functions such as sum() on such fields can give misleading results.
@@ -276,6 +351,7 @@ for more examples.
   <tr><td>max</td><td>Keeps the maximum value of selected documents</td><td>Numeric</td><td>Numeric</td></tr>
   <tr><td>xor</td><td>XOR the values (their least significant 64 bits) of all selected documents</td><td>Any</td><td>Long</td></tr>
   <tr><td>stddev</td><td>Computes the population standard deviation over all selected documents</td><td>Numeric</td><td>Double</td></tr>
+  <tr><td>quantiles</td><td>Computes one or multiple quantiles of the values of an expression. Quantiles must be a number between 0 and 1 inclusive.</td><td>[Numeric+], Expr</td><td>[{"quantile":Double,"value":Double}+]</td></tr>
 
   <tr><td colspan="4"><h3 id="hit-aggregators">Hit aggregators</h3></td></tr>
   <tr class="trx"><th class="thx">Name</th><th class="thx">Description</th><th class="thx">Arguments</th><th class="thx">Result</th></tr>
@@ -397,7 +473,6 @@ for more examples.
               <code>bucket(3)</code>/<code>bucket[3]</code> are the same as <code>bucket[3,4></code>.
               This is allowed for string expressions as well;
               <code>bucket("c")</code> is identical to <code>bucket["c", "c "></code>.</li>
-          </li>
       </ul>
   </td><td>Any, Bucket+</td><td>BucketList</td></tr>
 
@@ -409,6 +484,7 @@ for more examples.
     The field must be a <a href="schema-reference.html#long">long</a>,
     with second resolution (unix timestamp/epoch) -
     <a href="../grouping.html#time-and-date">examples</a>.
+    Each of the time-functions will respect the <a href="query-api-reference.html#timezone">timezone</a> query parameter.
   </td></tr>
   <tr class="trx"><th class="thx">Name</th><th class="thx">Description</th><th class="thx">Arguments</th><th class="thx">Result</th></tr>
   <tr><td>time.dayofmonth</td><td>Returns the day of month (1-31) for the given timestamp</td><td>Long</td><td>Long</td></tr>
@@ -478,14 +554,31 @@ for more examples.
   <tr><td>math.hypot</td><td>Return length of hypotenuse given X and Y sqrt(X^2 + Y^2)</td><td>Double, Double</td><td>Double</td></tr>
 </table>
 
+<h2 id="filters">Filters</h2>
+<table class="table">
+  <tr><td colspan="4"><h3 id="string-filters">String filters</h3></td></tr>
+  <tr class="trx"><th class="thx">Name</th><th class="thx">Description</th><th class="thx">Arguments</th><th class="thx">Result</th></tr>
+  <tr><td>regex</td><td>Matches a field against a regular expression string.</td><td>String, Expression</td><td>Bool</td></tr>
+
+  <tr><td colspan="4"><h3 id="numeric-filters">Numeric filters</h3></td></tr>
+  <tr class="trx"><th class="thx">Name</th><th class="thx">Description</th><th class="thx">Arguments</th><th class="thx">Result</th></tr>
+  <tr><td>range</td><td>Matches when a field is between a lower and upper bound.</td><td>Numeric, Numeric, Expression, Bool?, Bool?</td><td>Bool</td></tr>
+
+  <tr><td colspan="4"><h3 id="bitwise-expressions">Predicate filters </h3></td></tr>
+  <tr class="trx"><th class="thx">Name</th><th class="thx">Description</th><th class="thx">Arguments</th><th class="thx">Result</th></tr>
+  <tr><td>and</td><td>Logical <code>and</code> between the arguments.</td><td>Filter, Filter</td><td>Bool</td></tr>
+  <tr><td>not</td><td>Logical <code>not</code> on the argument.</td><td>Filter</td><td>Bool</td></tr>
+  <tr><td>or</td><td>Logical <code>or</code> between the arguments.</td><td>Filter, Filter</td><td>Bool</td></tr>
+</table>
 
 
-<h2 id="select-parameter-language-grammar">Select parameter language grammar</h2>
+<h2 id="grouping-language-grammar">Grouping language grammar</h2>
 <pre>
-request    ::= group [ "where" "(" ( "true" | "$query" ) ")" ]
+request    ::= "all(" operations ")"
 group      ::= ( "all" | "each") "(" operations ")" [ "as" "(" identifier ")" ]
-operations ::= [ "group" "(" expression ")" ]
-               ( ( "alias" "(" identifier "," expression ")" ) |
+operations ::= [ "group" "(" exp ")" ]
+               ( ( "alias" "(" identifier "," exp ")" ) |
+                 ( "filter" "(" filterOp ")" ) |
                  ( "max"   "(" ( number | "inf" ) ")" ) |
                  ( "order" "(" expList | aggrList ")" ) |
                  ( "output" "(" aggrList ")" ) |
@@ -503,6 +596,7 @@ aggr       ::= ( ( "count" "(" ")" ) |
                [ "as" "(" identifier ")" ]
 expList    ::= exp ( "," exp )*
 exp        ::= ( "+" | "-") ( "$" identifier [ "=" math ] ) | ( math ) | ( aggr )
+filterOp   ::= "regex" "(" string "," exp ")"
 math       ::= value [ ( "+" | "-" | "*" | "/" | "%" ) value ]
 value      ::= ( "(" exp ")" ) |
                ( "add" "(" expList ")" ) |

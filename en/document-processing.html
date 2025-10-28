@@ -1,8 +1,6 @@
 ---
-# Copyright Vespa.ai. Licensed under the terms of the Apache 2.0 license. See LICENSE in the project root.
+# Copyright Vespa.ai. All rights reserved.
 title: "Document Processing"
-redirect_from:
-- /documentation/document-processing.html
 ---
 
 <p>
@@ -49,9 +47,8 @@ redirect_from:
 <ul>
   <li>If it does general data-processing, such as populating some document fields from others,
     looking up data in external services, etc., it should be added to a general docproc chain.</li>
-  <li>If, and only if, it does processing required for <em>indexing</em>,
-    or requires this to have already been run — e.g.,
-    for processing the <a href="annotations.html">annotations</a> created by the default indexing document processor —
+  <li>If, and only if, it does processing required for <em>indexing</em>
+    - or requires this to have already been run —
     it should be added to a chain which inherits the <em>indexing</em> chain,
     and which is used for indexing by a content cluster.</li>
 </ul>
@@ -137,7 +134,7 @@ public class SimpleDocumentProcessor extends DocumentProcessor {
 <p>
   The <code>process()</code> method should loop through all
   document operations in <code>Processing.getDocumentOperations()</code>, do
-  whatever it sees fit to them, and return a Progress:
+  whatever it sees fit to them, and return a <code>Progress</code>:
 </p>
 <pre>{% highlight java %}
 public Progress process(Processing processing) {
@@ -176,11 +173,27 @@ public Progress process(Processing processing) {
       meaning that this application will not try to re-feed this document operation.
       Return an error message/reason by calling <code>withReason()</code>:
       </p>
+      <p>
+        This result is represented as a <code>500 Internal Server Error</code> response in <a href="document-v1-api-guide.html">Document v1</a>.
+      </p>
 <pre>{% highlight java %}
 if (op instanceof DocumentPut) {
     return Progress.FAILED.withReason("PUT is not supported");
 }
 {% endhighlight %}</pre>
+    </td>
+  </tr><tr>
+    <td><code>Progress.INVALID_INPUT</code></td>
+    <td>
+      <p>
+        Available since 8.584.
+      </p>
+      <p>
+        Processing failed due to invalid input, like a malformed document operation.
+      </p>
+      <p>
+        This result is represented as a <code>400 Bad Request</code> response in <a href="document-v1-api-guide.html">Document v1</a>.
+      </p>
     </td>
   </tr><tr>
     <td><code>Progress.LATER</code></td>
@@ -414,8 +427,7 @@ Consider the following configuration:
 </pre>
 <p>
   Changing chain ids, components in a chain, component configuration and schema mapping all takes effect after
-  <a href="application-packages.html#deploy">vespa activate</a> -
-  no restart required.
+  deployment - no restart required.
   Changing a <em>cluster name</em> (i.e. the container id)
   requires a restart of docproc services after <em>vespa activate</em>.
 </p><p>

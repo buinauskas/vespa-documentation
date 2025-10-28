@@ -1,19 +1,15 @@
 ---
-# Copyright Vespa.ai. Licensed under the terms of the Apache 2.0 license. See LICENSE in the project root.
+# Copyright Vespa.ai. All rights reserved.
 title: validation-overrides.xml
-redirect_from:
-- /documentation/reference/validation-overrides.html
 ---
 
 <p>
   <em>validation-overrides.xml</em> is added to the root of an
   <a href="application-packages-reference.html">application package</a>
   (i.e. next to <a href="services.html">services.xml</a>)
-  to allow a deployment, that otherwise fails to validate, to proceed.
-  Validations which can be overridden in this way
-  are returned with a dash-separated validation-id preceding the validation message.
-  E.g. if the message is <code>field-type-change: Changing the type of field 'foo' to 'bar' is not supported</code>
-  the validation id is <code>field-type-change</code>.
+  to allow a deployment that otherwise fails to validate to proceed.
+  The message will explain what the validation concerns and how to add
+  a validation override
 </p>
 <p>
   Validations protect against inadvertently corrupting a production instance.
@@ -38,10 +34,10 @@ redirect_from:
 <pre>{% highlight xml %}
 <validation-overrides>
     <allow
-        until="2016-01-31"
-        comment="Reduce to needed cluster size after benchmarking">cluster-size-reduction</allow>
+        until="2025-01-31"
+        comment="Reduce to needed cluster size after benchmarking">resources-reduction</allow>
     <allow
-        until="2016-02-03">field-type-change</allow>
+        until="2025-02-03">field-type-change</allow>
 </validation-overrides>
 {% endhighlight %}</pre>
 
@@ -49,11 +45,8 @@ redirect_from:
 
 <h2 id="allow">allow</h2>
 <p>
-  An <code>allow</code>-tag disables a particular validation for a limited time.
-  It contains a single validation-id,
-  see <a href="https://github.com/vespa-engine/vespa/blob/master/config-model-api/src/main/java/com/yahoo/config/application/api/ValidationId.java">
-  ValidationId.java</a> for validation overrides.
-  <code>allow</code>-tags with unknown ids are ignored.
+  An <code>allow</code> tag disables a particular validation for a limited time and
+  contains a single validation id. <code>allow</code> tags with unknown ids are ignored.
 </p>
 <table class="table">
   <thead>
@@ -77,3 +70,9 @@ redirect_from:
 </tr>
   </tbody>
 </table>
+
+<h2 id="list">List of validation overrides</h2>
+
+See <a href="https://github.com/vespa-engine/vespa/blob/master/config-model-api/src/main/java/com/yahoo/config/application/api/ValidationId.java">
+ValidationId.java</a> for a complete list of validation overrides.
+</p>

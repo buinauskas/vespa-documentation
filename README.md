@@ -1,9 +1,9 @@
-<!-- Copyright Vespa.ai. Licensed under the terms of the Apache 2.0 license. See LICENSE in the project root. -->
+<!-- Copyright Vespa.ai. All rights reserved. -->
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://vespa.ai/assets/vespa-ai-logo-heather.svg">
-  <source media="(prefers-color-scheme: light)" srcset="https://vespa.ai/assets/vespa-ai-logo-rock.svg">
-  <img alt="#Vespa" width="200" src="https://vespa.ai/assets/vespa-ai-logo-rock.svg" style="margin-bottom: 25px;">
+  <source media="(prefers-color-scheme: dark)" srcset="https://assets.vespa.ai/logos/Vespa-logo-green-RGB.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://assets.vespa.ai/logos/Vespa-logo-dark-RGB.svg">
+  <img alt="#Vespa" width="200" src="https://assets.vespa.ai/logos/Vespa-logo-dark-RGB.svg" style="margin-bottom: 25px;">
 </picture>
 
 [![Vespa Documentation Search Feed](https://github.com/vespa-engine/documentation/actions/workflows/feed.yml/badge.svg)](https://github.com/vespa-engine/documentation/actions/workflows/feed.yml)
@@ -27,18 +27,22 @@ To edit documentation, check out and work off the master branch in this reposito
 Documentation is written in HTML or Markdown.
 Use a single Jekyll template [_layouts/default.html](_layouts/default.html) to add header, footer and layout.
 
-Install [bundler](https://bundler.io/), then
+You probably need to get the right Ruby version first, with
+
+    $ brew install rbenv
+    $ rbenv init
+    $ source ~/.zprofile
+    $ rbenv install 3.3.7
+    $ rbenv local 3.3.7
+
+Prepend /opt/homebrew/opt/ruby/bin to your $PATH, e.g. in your .zshrc.
+
+Then you should be able to run:
 
     $ bundle install
     $ bundle exec jekyll serve --incremental --drafts --trace
 
 to set up a local server at localhost:4000 to see the pages as they will look when served.
-If you get strange errors on bundle install try
-
-    $ export PATH=“/usr/local/opt/ruby@2.6/bin:$PATH”
-    $ export LDFLAGS=“-L/usr/local/opt/ruby@2.6/lib”
-    $ export CPPFLAGS=“-I/usr/local/opt/ruby@2.6/include”
-    $ export PKG_CONFIG_PATH=“/usr/local/opt/ruby@2.6/lib/pkgconfig”
 
 The output will highlight rendering/other problems when starting serving.
 
@@ -53,6 +57,10 @@ or RHEL 8
 
     $ podman run -it --rm --name doc -p 4000:4000 -e JEKYLL_ROOTLESS=true \
       -v "$PWD":/srv/jekyll:Z docker.io/jekyll/jekyll jekyll serve
+
+The Jekyll server should normally rebuild HTML files automatically
+when a source files changes. If this does not happen, you can use
+`jekyll serve --force-polling` as a workaround.
 
 The layout is written in [denali.design](https://denali.design/),
 see [_layouts/default.html](_layouts/default.html) for usage.
@@ -136,7 +144,7 @@ File locations below refer to this repo's root.
     1. The generated _open_index.json_ can then be
       [fed to Vespa](https://docs.vespa.ai/en/reference/document-json-format.html)
 
-1. Feed changes to https://console.vespa.oath.cloud/tenant/vespa-team/application/vespacloud-docsearch
+1. Feed changes to https://console.vespa-cloud.com/tenant/vespa-team/application/vespacloud-docsearch
    using [feed_to_vespa.py](feed_to_vespa.py):
     1. Visit all content on the Vespa instance to list all IDs
     1. Determine whether or not to remove documents

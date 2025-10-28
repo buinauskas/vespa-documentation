@@ -1,8 +1,6 @@
 ---
-# Copyright Vespa.ai. Licensed under the terms of the Apache 2.0 license. See LICENSE in the project root.
+# Copyright Vespa.ai. All rights reserved.
 title: "Vespa Overview"
-redirect_from:
-- /documentation/overview.html
 ---
 
 <p>Vespa is a platform for applications which need low-latency computation over large data sets.
@@ -64,7 +62,7 @@ manages the process of changing the clusters safely without disruption to traffi
 when the configuration changed.</p>
 
 <p>A Vespa application is completely specified by an
-<a href="application-packages.html"><em>application package</em></a>,
+<a href="applications.html"><em>application package</em></a>,
 which is a directory structure containing a declaration of the clusters to run as part of the application,
 the content schemas, any machine-learned models and Java components,
 and other configuration or data files needed by various features.
@@ -93,7 +91,7 @@ from all the nodes of the application. By default, the first node in the config 
     free-text fields, structured data or <a href="nearest-neighbor-search.html">vector spaces (ANN)</a>.
     Any number of such conditions can be combined freely in boolean trees to
     define the full query to be executed.
-    Vespa will compute a query plan over the conditions which executed them
+    Vespa will compute a query plan over the conditions which executes them
     efficiently with any number of conditions such as e.g. filters combined with ANN conditions.
     Matches to a query can be passed through an inference step which can compute
     any business logic or machine-learned model expressed as a
@@ -155,7 +153,7 @@ which is one of the main design goals of Vespa.</p>
 
 <h2 id="administration_and_developer_support">Administration clusters and developer support</h2>
 
-<p>The <a href="/en/application-packages.html">single configuration cluster</a>
+<p>The <a href="/en/applications.html">single configuration cluster</a>
 controls all the other clusters of the system.
 
 A config server derives the low level configuration of each individual cluster, node and process,
@@ -169,10 +167,10 @@ Other admin clusters in Vespa are the cluster controller cluster (controls one o
 logserver cluster (logserver holds log archive for logs from all nodes in the application)
 and service location brokers (slobroks, which are a name service used by some services in Vespa).
 
-<h3 id="application_packages">Application packages</h2>
+<h3 id="application_packages">Application packages</h3>
 <p>Application packages may be <a href="reference/deploy-rest-api-v2.html">changed, redeployed</a>
 and <a href="reference/config-rest-api-v2.html">inspected</a> over an HTTP REST API,
-or through a <a href="application-packages.html#deploy">command line interface</a>.
+or through a <a href="/en/vespa-cli.html#deployment">command line interface</a>.
 The administration cluster runs over <a href="https://zookeeper.apache.org">ZooKeeper</a>
 to make changes to configuration singular and consistent, and to avoid having a single point of failure.</p>
 

@@ -1,4 +1,4 @@
-# Copyright Vespa.ai. Licensed under the terms of the Apache 2.0 license. See LICENSE in the project root.
+# Copyright Vespa.ai. All rights reserved.
 ruby '>=2.6'
 
 source "https://rubygems.org"
@@ -33,3 +33,16 @@ gem "webrick"
 # Get the html-proofer to work
 gem 'rake'
 gem 'html-proofer'
+
+# Work-around for csv and base64 no longer included in Ruby 3.4.0
+gem "csv"
+gem "base64"
+
+# Jekyll plugins group
+
+group :jekyll_plugins do
+  gem "jekyll-feed", "~> 0.12"
+  gem "reverse_markdown"
+  gem "parallel"
+  gem "ruby-progressbar" # <-- Add this line
+end

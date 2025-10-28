@@ -1,5 +1,5 @@
 ---
-# Copyright Vespa.ai. Licensed under the terms of the Apache 2.0 license. See LICENSE in the project root.
+# Copyright Vespa.ai. All rights reserved.
 skipheading: true
 index: false
 ---
@@ -14,7 +14,7 @@ index: false
 {% if site.data.sidebar.docs[0] %}
 
   {% for section in site.data.sidebar.docs %}
-    <h4>{{ section.title }}</h4>
+    <h4><a href="{{ section.url }}">{{ section.title }}</a></h4>
     <ul>
       {% if section.documents[0] %}
         {% for entry in section.documents %}

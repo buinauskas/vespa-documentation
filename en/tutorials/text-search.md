@@ -1,8 +1,6 @@
 ---
-# Copyright Vespa.ai. Licensed under the terms of the Apache 2.0 license. See LICENSE in the project root.
+# Copyright Vespa.ai. All rights reserved.
 title: "Text Search Tutorial"
-redirect_from:
-- /documentation/tutorials/text-search.html
 ---
 
 This tutorial will guide you through setting up a simple text search application. 
@@ -59,12 +57,12 @@ The following step includes extracting documents, queries and relevance judgment
 <div class="pre-parent">
   <button class="d-icon d-duplicate pre-copy-button" onclick="copyPreContent(this)"></button>
 <pre data-test="exec">
-$ ./bin/convert-msmarco.sh
+$ ./scripts/convert-msmarco.sh
 </pre>
 </div>
 
 
-After running the script, we end up with a file `ext/vespa.json` containing lines such as the one below:
+After running the script, we end up with a file `dataset/documents.jsonl` containing lines such as the one below:
 
 <pre>{% highlight json%}
 {
@@ -75,8 +73,7 @@ After running the script, we end up with a file `ext/vespa.json` containing line
         "title": "The hot glowing surfaces of stars emit energy in the form of electromagnetic radiation",
         "body": "Science   Mathematics Physics The hot glowing surfaces of stars emit energy in the form of electromagnetic radiation ... "
     }
-}
-{% endhighlight %}</pre>
+}{% endhighlight %}</pre>
 
 In addition to `vespa.json` we also have a `test-queries.tsv` file containing a list of the sampled queries
 along with the document ID relevant to each particular query.
@@ -134,7 +131,7 @@ schema msmarco {
     document-summary minimal {
         summary id {  }
     }
-    document-summary url-tokens {
+    document-summary debug-tokens {
         summary url {}
         summary url-tokens {
             source: url
@@ -180,7 +177,7 @@ the query processing that searches a field or fieldset uses *one* type of transf
 
 #### Document summaries to control search response contents
 Next, we define two [document summaries](../document-summaries.html). 
-Document summaries control what fields are available in the [response](../reference/default-result-format.html); we include the `url-tokens` document-summary to 
+Document summaries control what fields are available in the [response](../reference/default-result-format.html); we include the `debug-tokens` document-summary to 
 demonstrate later how we can get visibility into how text is converted into searchable tokens. 
 
 #### Ranking to determine matched documents ordering
@@ -236,7 +233,7 @@ Some notes about the elements above:
 ## Deploy the application package
 
 Once we have finished writing our application package, we can deploy it.
-We use settings similar to those in the [Vespa quick start guide](../vespa-quick-start.html).
+We use settings similar to those in the [Vespa quick start guide](../deploy-an-application-local.html).
 
 Start the Vespa container:
 
@@ -288,7 +285,7 @@ already has data in the appropriate format expected by Vespa:
 <div class="pre-parent">
   <button class="d-icon d-duplicate pre-copy-button" onclick="copyPreContent(this)"></button>
 <pre data-test="exec">
-$ vespa feed -t http://localhost:8080 ext/vespa.json
+$ vespa feed -t http://localhost:8080 dataset/documents.jsonl
 </pre>
 </div>
 
@@ -483,7 +480,7 @@ $ vespa query \
   'yql=select * from msmarco where url contains ({filter:true,ranked:false}"huffingtonpost.co.uk")' \
   'trace.level=0' \
   'language=en' \
-  'summary=url-tokens'
+  'summary=debug-tokens'
 </pre>
 </div>
 
@@ -545,7 +542,7 @@ Let us do a similar example to demonstrate the impact of linguistic stemming
 <pre data-test="exec" data-test-assert-contains="996">
 $ vespa query \
   'yql=select * from msmarco where url contains ({filter:true,ranked:false}"http")' \
-  'summary=url-tokens' \
+  'summary=debug-tokens' \
   'language=en'
 </pre>
 </div>
@@ -645,7 +642,7 @@ schema msmarco {
     document-summary minimal {
         summary id {  }
     }
-    document-summary url-tokens {
+    document-summary debug-tokens {
         summary url {}
         summary url-tokens {
             source: url

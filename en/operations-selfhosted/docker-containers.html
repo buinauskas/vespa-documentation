@@ -1,8 +1,8 @@
 ---
-# Copyright Vespa.ai. Licensed under the terms of the Apache 2.0 license. See LICENSE in the project root.
+# Copyright Vespa.ai. All rights reserved.
 title: "Docker containers"
+category: oss
 redirect_from:
-- /documentation/docker-containers-in-production.html
 - /en/docker-containers-in-production.html
 - /en/operations/docker-containers.html
 ---
@@ -17,7 +17,7 @@ redirect_from:
 
 <h2 id="mounting-persistent-volumes">Mounting persistent volumes</h2>
 <p>
-  The <a href="/en/vespa-quick-start.html">quick start</a>
+  The <a href="/en/deploy-an-application-local.html">quick start</a>
   and <a href="/en/operations-selfhosted/multinode-systems.html#aws-ecs">AWS ECS multinode</a> guides
   show how to run Vespa in Docker containers.
   In these examples, all the data is stored inside the container - the data is lost if the container is deleted.
@@ -54,8 +54,8 @@ $ docker run --detach --name vespa --hostname vespa-container \
   and fail if the wrong user or group is set as the owner.
 </p>
 <p>
-  When using an isolated user namespace for the Vespa container you must set the uid and gid of the
-  directories on the host to the subordinate uid and gid depending on your mapping.
+  When using an isolated user namespace for the Vespa container, you must set the uid and gid of the
+  directories on the host to the subordinate uid and gid, depending on your mapping.
   See the <a href="https://docs.docker.com/engine/security/userns-remap/">Docker documentation</a> for more details.
 </p>
 <pre>
@@ -86,7 +86,7 @@ $ docker run --detach --name vespa --user vespa:vespa --hostname vespa-container
   <a href="/en/operations-selfhosted/files-processes-and-ports.html#vespa-system-limits">system limits</a>.
 </p>
 <p>
-  In general when using Docker or Podman to run Vespa the <code>--ulimit</code> option should be used
+  In general, when using Docker or Podman to run Vespa, the <code>--ulimit</code> option should be used
   to set limits according to <a href="/en/operations-selfhosted/files-processes-and-ports.html#vespa-system-limits">system limits</a>.
   The <code>--pids-limit</code> should be set to unlimited (<code>-1</code> for Docker and <code>0</code> for Podman).
 </p>
@@ -97,14 +97,14 @@ $ docker run --detach --name vespa --user vespa:vespa --hostname vespa-container
 <p>
   Vespa performance improves significantly by enabling
   <a href="https://www.kernel.org/doc/html/latest/admin-guide/mm/transhuge.html">Transparent Huge Pages (THP)</a>,
-  especially for memory intensive applications with large dense tensors with concurrent query and write workloads.
+  especially for memory-intensive applications with large dense tensors with concurrent query and write workloads.
 </p>
 <p>
-  One application improved query p99 latency from 950 ms to 150ms during concurrent query and write by enabling THP.
+  One application improved query p99 latency from 950 ms to 150 ms during concurrent query and write by enabling THP.
   Using THP is even more important when running in virtualized environments like AWS and GCP due to nested page tables.
 </p>
 <p>
-  When running Vespa using the container image, <em>THP</em> settings need to be set on the base host OS (Linux).
+  When running Vespa using the container image, <em>THP</em> settings must be set on the base host OS (Linux).
   The recommended settings are:
 </p>
 <pre>
@@ -113,8 +113,8 @@ $ echo always > /sys/kernel/mm/transparent_hugepage/enabled
 $ echo never >  /sys/kernel/mm/transparent_hugepage/defrag
 </pre>
 <p>
-  To verify that the setting is active one should see that <em>AnonHugePages</em> is non-zero,
-  in this case 75 GB has been allocated using AnonHugePages.
+  To verify that the setting is active, one should see that <em>AnonHugePages</em> is non-zero,
+  In this case, 75 GB has been allocated using AnonHugePages.
 </p>
 <pre>
 $ cat /proc/meminfo |grep AnonHuge
@@ -174,24 +174,37 @@ $ docker run &lt;other arguments&gt; \
 <p>
   Stopping a running <em>vespaengine/vespa</em> container triggers a graceful shutdown,
   which saves time when starting the container again
-  (i.e. data structures are flushed).
-  If the container is shutdown forcefully,
-  the content nodes might need to restore the state from the transaction log which might be time-consuming.
-  There is no chance of data loss or data corruption as the data is always written and sync'ed to persistent storage.
+  (i.e., data structures are flushed).
+  If the container is shut down forcefully,
+  the content nodes might need to restore the state from the transaction log, which might be time-consuming.
+  There is no chance of data loss or data corruption as the data is always written and synced to persistent storage.
 </p>
 <p>
   The default timeout for the Docker daemon to wait for the shutdown
   might be too low for larger number of documents per node.
   Below stop will wait at least 120 seconds before terminating the running container forcefully,
-  if the stop is successfully performed before the timeout has passed the command takes less than the timeout:
+  if the stop is successfully performed before the timeout has passed, the command takes less than the timeout:
 </p>
 <pre>
 $ docker stop name -t 120
 </pre>
 <p>
   It is also possible to configure the default Docker daemon timeout,
-  see <a href="https://docs.docker.com/engine/reference/commandline/dockerd/">--shutdown-timeout</a>.
+  see <a href="https://docs.docker.com/reference/cli/dockerd/">--shutdown-timeout</a>.
 </p>
+<p>A clean content node shutdown looks like:</p>
+<pre>
+[2025-05-02 10:07:52.052] EVENT   searchnode       proton.node.server   stopping/1 name="storagenode" why="Stopped"
+[2025-05-02 10:07:52.056] EVENT   searchnode       proton       stopping/1 name="servicelayer" why="clean shutdown"
+[2025-05-02 10:07:52.056] INFO    searchnode       proton.proton.server.rtchooks        shutting down monitoring interface
+[2025-05-02 10:07:52.058] INFO    searchnode       proton.searchlib.docstore.logdatastore      Flushing. Disk bloat is now at 0 of 8832 at 0.00 percent
+[2025-05-02 10:07:52.059] INFO    searchnode       proton.searchlib.docstore.logdatastore      Flushing. Disk bloat is now at 0 of 8832 at 0.00 percent
+[2025-05-02 10:07:52.060] INFO    searchnode       proton.searchlib.docstore.logdatastore      Flushing. Disk bloat is now at 0 of 8840 at 0.00 percent
+[2025-05-02 10:07:52.066] INFO    searchnode       proton.transactionlog.server Stopping TLS
+[2025-05-02 10:07:52.066] INFO    searchnode       proton.transactionlog.server TLS Stopped
+[2025-05-02 10:07:52.071] EVENT   searchnode       proton       stopping/1 name="proton" why="clean shutdown"
+[2025-05-02 10:07:52.078] EVENT   config-sentinel  sentinel.sentinel.service    stopped/1 name="searchnode" pid=354 exitcode=0
+</pre>
 
 
 
@@ -204,7 +217,7 @@ $ docker stop name -t 120
 {% include note.html content="Too little memory is a very common problem when testing Vespa in Docker containers.
 Use the below to troubleshoot before making a support request, and also see the <a href='/en/faq.html'>FAQ</a>."%}
 <p>
-  As a rule of thumb, a single-node Vespa application requires minimum 4G for the Docker container.
+  As a rule of thumb, a single-node Vespa application requires a minimum of 4 GB for the Docker container.
   Using <code>docker stats</code> can be useful to track memory usage:
 </p>
 <pre>
@@ -219,7 +232,7 @@ be43aacd0bbb   node2     191.22%   497.8MiB / 3.84GiB   12.66%    19.6kB / 21.6k
   It is not necessarily easy to verify that Vespa has started all services successfully.
   Symptoms of errors due to insufficient memory vary, depending on where it fails.
   Example: Inspect restart logs in a container named <em>vespa</em>,
-  running the <a href="/en/vespa-quick-start.html">quickstart</a> with only 2G:
+  running the <a href="/en/deploy-an-application-local.html">quickstart</a> with only 2G:
 </p>
 <pre>
 $ docker exec -it vespa sh -c "/opt/vespa/bin/vespa-logfmt -S config-sentinel -c sentinel.sentinel.service"
@@ -244,11 +257,11 @@ INFO    : config-sentinel  sentinel.sentinel.service	container: will delay start
 </p>
 <p>
   A common problem is <a href="/en/operations-selfhosted/configuration-server.html">config servers</a>
-  not starting or running properly due to lack of memory.
+  not starting or running properly due to a lack of memory.
   This manifests itself as nothing listening on 19071, or deployment failures.
 </p>
 <p>
-  Some guides / sample applications have specific configuration to minimize resource usage.
+  Some guides/sample applications have specific configurations to minimize resource usage.
   Example from <a href="https://github.com/vespa-engine/sample-apps/tree/master/examples/operations/multinode-HA">multinode-HA</a>:
 </p>
 <pre>
@@ -268,9 +281,9 @@ $ docker run --detach --name node0 --hostname node0.vespanet \
   are tweaked to the minimum for a functional test only.
 </p>
 {% include important.html content="For production use,
-do not set <code>VESPA_CONFIGSERVER_JVMARGS</code> and <code>VESPA_CONFIGPROXY_JVMARGS</code>
+do not reduce memory settings in <code>VESPA_CONFIGSERVER_JVMARGS</code> and <code>VESPA_CONFIGPROXY_JVMARGS</code>
 unless you know what you are doing -
-the Vespa defaults are set for regular production use, and rarely needs changing."%}
+the Vespa defaults are set for regular production use, and rarely need changing."%}
 <p>
   Container memory setting are done in <em>services.xml</em>, example from
   <a href="https://github.com/vespa-engine/sample-apps/blob/master/examples/operations/multinode-HA/services.xml">
@@ -290,7 +303,7 @@ the Vespa defaults are set for regular production use, and rarely needs changing
 
 <h2 id="network">Network</h2>
 <p>
-  Vespa processes intercommunicate over both fixed and ephemeral ports -
+  Vespa processes communicate over both fixed and ephemeral ports -
   in general, all ports must be accessible.
   See <a href="/en/visiting.html#handshake-failed">example ephemeral use</a>.
 </p>
@@ -303,12 +316,12 @@ the Vespa defaults are set for regular production use, and rarely needs changing
 
 <h2 id="resource-usage">Resource usage</h2>
 <p>
-  Note that CPU usage will not be 0 even if there are 0 documents and 0 queries.
+  Note that CPU usage will not be zero even if there are zero documents and zero queries.
   Starting the <em>vespaengine/vespa</em> container image means starting the
   <a href="/en/operations-selfhosted/configuration-server.html">configuration server</a>
   and the <a href="/en/operations-selfhosted/config-sentinel.html">configuration sentinel</a>.
   When deploying an application, the sentinel starts the configured service processes,
-  and they all listen to work to do, changes in config and so forth.
+  and they all listen to work to do, changes in the config, and so forth.
 </p>
 <p>Therefore, an "idle" container instance consumes CPU and memory.</p>
 
@@ -326,14 +339,14 @@ the Vespa defaults are set for regular production use, and rarely needs changing
 </p>
 <p>
   Many startup failures are caused by a failed Vespa Container start due to configuration or download errors.
-  use <code>docker logs vespa</code> to show the log (this example assumes a Docker container named <code>vespa</code>,
+  Use <code>docker logs vespa</code> to show the log (this example assumes a Docker container named <code>vespa</code>,
   use <code>docker ps</code> to list containers).
 </p>
 
 
 <h3 id="docker-image">Docker image</h3>
 <p>
-  Make sure to use a recent Vespa release (check <a href="https://factory.vespa.oath.cloud/releases">releases</a>)
+  Make sure to use a recent Vespa release (check <a href="https://factory.vespa.ai/releases">releases</a>)
   and validate the downloaded image:
 </p>
 <pre>

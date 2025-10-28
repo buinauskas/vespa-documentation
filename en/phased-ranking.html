@@ -1,12 +1,10 @@
 ---
-#Copyright Vespa.ai. Licensed under the terms of the Apache 2.0 license. See LICENSE in the project root.
+# Copyright Vespa.ai. All rights reserved.
 title: "Phased Ranking"
-redirect_from:
-- /documentation/phased-ranking.html
 ---
 
 <p>
-Vespa allows expressing multi-phased retrieval and ranking of documents. The retrieval phase is done close to the data in the content nodes,
+Vespa allows expressing multiphased retrieval and ranking of documents. The retrieval phase is done close to the data in the content nodes,
 while the ranking phase(s) can be done in the content nodes or in the stateless container after scatter-and-gather from content node(s).
 The retrieval part of a phased pipeline is expressed by using the <a href="query-api.html">query API</a> 
 and the ranking part is expressed by using the <a href="reference/schema-reference.html#rank-profile">rank-profile</a> in the schema.
@@ -14,21 +12,21 @@ and the ranking part is expressed by using the <a href="reference/schema-referen
 
 <ul>
   <li><strong>Retrieval:</strong><a href="#top-k-query-operators"> <em>Top-k</em> query operators</a>, like <a href="using-wand-with-vespa.html">weakAnd/wand</a> and 
-  <a href="nearest-neighbor-search.html">nearest neighbor search</a> allow retrieval with sub-linear complexity. These 
+  <a href="nearest-neighbor-search.html">nearest neighbor search</a> allow retrieval with sublinear complexity. These
   query operators use simple scoring functions that are computationally cheap to evaluate over Vespa indexes. Using
   the expressiveness of the Vespa query language, developers can combine multiple retrievers in the query, and expose 
   the union of retrieved documents into Vespa ranking phases.</li>
   
   <li>
     <strong>Per node ranking:</strong>The query specification retrieves documents and ranks them using declarative phases evaluated within 
-    the <a href="#two-phase-ranking-content-nodes">content nodes</a>:
+    the <a href="#two-phase-ranking-on-content-nodes">content nodes</a>:
     <ul>
-      <li><a href="#first-phase-ranking">first-phase expression</a>;
+      <li><a href="#first-phase-ranking-on-content-nodes">first-phase expression</a>;
       configured in <a href="reference/schema-reference.html#rank-profile">rank-profile</a>. 
       This phase is evaluated for <em>all</em> hits retrieved by the query logic. This phase can also remove 
       retrieved documents using <a href="reference/schema-reference.html#rank-score-drop-limit">rank-score-drop-limit</a>.
       </li>
-      <li><a href="#two-phase-ranking-content-nodes">second-phase ranking</a>; 
+      <li><a href="#two-phase-ranking-on-content-nodes">second-phase ranking</a>;
       configured in <a href="reference/schema-reference.html#rank-profile">rank-profile</a>.
       Optionally re-rank the top-scoring hits from the first-phase ranking using a more complex expression. The
       <a href="reference/schema-reference.html#secondphase-rerank-count">rerank-count</a> sets a strict upper bound on the 
@@ -37,7 +35,7 @@ and the ranking part is expressed by using the <a href="reference/schema-referen
     </ul>
   <li><strong>Global ranking:</strong>Following the per content node local ranking phases, 
     re-ranking can occur after the content nodes have returned the merged top-scoring hits to the stateless container. 
-    This phase is specified using a <a href="#global-phase">global-phase</a> expression in the 
+    This phase is specified using a <a href="#using-a-global-phase-expression">global-phase</a> expression in the
     <a href="reference/schema-reference.html#rank-profile">rank-profile</a>. 
     Additionally, the global-phase can conduct <a href="#cross-hit-normalization-including-reciprocal-rank-fusion">
       cross-hit normalization</a> to combine unrelated scoring methods.
@@ -50,7 +48,7 @@ and the ranking part is expressed by using the <a href="reference/schema-referen
 
 
 
-<h2 id="first-phase-ranking">First-phase ranking on content nodes</h2>
+<h2 id="first-phase-ranking-on-content-nodes">First-phase ranking on content nodes</h2>
 <p>
   Normally, you will always start by having one ranking expression
   that is evaluated on the content nodes.  This is configured in
@@ -59,7 +57,7 @@ and the ranking part is expressed by using the <a href="reference/schema-referen
   as a <code>first-phase</code> expression.  This expression can
   use various <a href="ranking-expressions-features.html">rank features</a>
   with information extracted during the matching phase to evaluate
-  the relevance of each document. The first-phase expression is
+  the relevance of each document. The first-phase expression
   is computed for every document retrieved by the query. The computational cost 
   is bounded by the number of documents exposed to the ranking phase on each content node multiplied with
   the complexity of the first-phase expression; therefore the expression
@@ -69,7 +67,7 @@ and the ranking part is expressed by using the <a href="reference/schema-referen
 
 
 
-<h2 id="two-phase-ranking-content-nodes">Two-phase ranking on content nodes</h2>
+<h2 id="two-phase-ranking-on-content-nodes">Two-phase ranking on content nodes</h2>
 <p>
   While some use cases only require one (simple) first-phase
   ranking expression, for more advanced use cases it's possible to
@@ -113,15 +111,15 @@ schema myapp {
 </p>
 
 
-<h2 id="global-phase">Using a global-phase expression</h2>
+<h2 id="using-a-global-phase-expression">Using a global-phase expression</h2>
 <p>
-  Using a rank expressions configured as a
+  Using a rank expression configured as a
   <a href="reference/schema-reference.html#globalphase-rank">global-phase</a>
   in the <code>rank-profile</code> section of a schema, you can add
   a ranking phase that will run in the stateless container after
   gathering the best hits from the content node phases; this can be used
   instead of or in addition to
-  <a href="#two-phase-ranking-content-nodes">second-phase</a> ranking.
+  <a href="#two-phase-ranking-on-content-nodes">second-phase</a> ranking.
   The global-phase can also perform
   <a href="#cross-hit-normalization-including-reciprocal-rank-fusion">cross-hit normalization</a>
   to combine unrelated scoring methods.
@@ -153,7 +151,7 @@ schema myapp {
 <p>
   If you have large and complex expressions (including <a href="xgboost.html">xgboost</a>, <a href="lightgbm.html">lightgbm</a>),
   instead of an ONNX model, it's more efficient to use the highly optimized
-  <a href="#two-phase-ranking-content-nodes">second-phase</a>
+  <a href="#two-phase-ranking-on-content-nodes">second-phase</a>
   computation on content nodes. This is also true for sub-expressions that require lots of vector data, moving
   vector data across the network is expensive.
 </p>
@@ -210,7 +208,7 @@ schema myapp {
 </pre>
 <p>
   In the above example, the <em>my_expensive_function</em> will be evaluated on the content nodes
-  for the 50 top ranking documents from the first-phase so that the global-phase does not need to re-evaluate.
+  for the 50 top-ranking documents from the first-phase so that the global-phase does not need to re-evaluate.
 </p>
 
 
@@ -234,10 +232,10 @@ schema myapp {
   reranks (see <a href="#globalphase-rerank-count">configuration</a> above).
   This means that first, the input (<em>my_function_or_feature</em>)
   is computed or extracted from each hit that global-phase will
-  rerank; then the normalization step is applied; afterwards when
-  computing the actual global-phase expression the normalized output
+  rerank; then the normalization step is applied; afterwards, when
+  computing the actual global-phase expression, the normalized output
   is used.
-  As an example, assume some text fields with bm25 enabled, an onnx
+  As an example, assume some text fields with bm25 enabled, an ONNX
   model (from the <a href="#myapp-with-global-model">example</a> in
   the previous section), and a "popularity" numeric attribute:
 </p>
@@ -258,7 +256,7 @@ schema myapp {
     }
 </pre>
 <p>
-  The <code>normalize_linear</code> normalizer takes a single argument which must be
+  The <code>normalize_linear</code> normalizer takes a single argument, which must be
   a rank-feature or the name of a function.  It computes the maximum and minimum
   values of that input and scales linearly to the range [0, 1], basically using
   the formula <code>output = (input - min) / (max - min)</code>
@@ -267,9 +265,9 @@ schema myapp {
   The <code>reciprocal_rank</code> normalizer takes one or two arguments; the first
   must be a rank-feature or the name of a function, while the second (if present)
   must be a numerical constant, called <code>k</code> with default value 60.0.
-  It sorts the input values and finds their <em>rank</em> (so highest score gets
+  It sorts the input values and finds their <em>rank</em> (so the highest score gets
   rank 1, next highest 2, and so on). The output from reciprocal_rank is computed
-  with the formula <code> output = 1.0 / (k + rank) </code> so note that even the best
+  with the formula <code> output = 1.0 / (k + rank) </code>, so note that even the best
   input only gets <code>1.0 / 61 = 0.016393</code> as output with the default k.
 </p>
 <p>
@@ -283,13 +281,17 @@ reciprocal_rank(a) + reciprocal_rank(b) + reciprocal_rank(c)
 <p>as</p>
 <pre class=code>
 reciprocal_rank_fusion(a,b,c)
-</pre> for example.
-
+</pre>
+<p>for example.</p>
+<p>
+  See the <a href="https://github.com/vespa-engine/sample-apps/tree/master/colbert">Simple Hybrid Search with ColBERT</a>
+  sample application for a practical example of using reciprocal rank fusion.
+</p>
 
 
 <h2 id="stateless-re-ranking">Stateless re-ranking</h2>
 <p>
-  If the logic required is not suited for the <a href="#global-phase">global-phase</a> above,
+  If the logic required is not suited for the <a href="#using-a-global-phase-expression">global-phase</a> above,
   it's possible to write <a href="searcher-development.html">stateless searchers</a>
   which can re-rank hits using any custom scoring function or model.
   The searcher can also blend and re-order hits from multiple sources
@@ -304,9 +306,9 @@ reciprocal_rank_fusion(a,b,c)
   The number of <em>hits</em> is limited by the query api
   <a href="reference/query-api-reference.html#hits">hits</a> parameter and
   <a href="reference/query-api-reference.html#queryprofile">maxHits</a> setting.
-  The hits available for container level re-ranking are the global top ranking hits
-  after content nodes have retrieved and ranked the hits
-  and global top ranking hits have been found by merging the responses from the content nodes.
+  The hits available for container-level re-ranking are the global top-ranking hits
+  after content nodes have retrieved and ranked the hits,
+  and global top-ranking hits have been found by merging the responses from the content nodes.
 </p>
 
 
@@ -322,7 +324,7 @@ reciprocal_rank_fusion(a,b,c)
 </p>
 <p>
   The <a href="nearest-neighbor-search.html">nearest neighbor search</a> operator is also a top-k 
-  retrieval operator and the two operators can be combined in the same query.
+  retrieval operator, and the two operators can be combined in the same query.
 </p>
 
 
@@ -331,9 +333,9 @@ reciprocal_rank_fusion(a,b,c)
 <p>
 A good quality ranking expression will for most applications consume too much CPU
 to be runnable on all retrieved or matched documents within the latency budget/SLA.
-The application ranking function should hence in most cases be a second phase function.
-The task then becomes to find a first phase function,
-which correlates sufficiently well with the second phase function.
+The application ranking function should hence in most cases be a second-phase function.
+The task then becomes to find a first-phase function,
+which correlates sufficiently well with the second-phase function.
 </p>
 
 
@@ -368,11 +370,11 @@ which correlates sufficiently well with the second phase function.
   run a query and order by the mutable attribute.
 </p>
 {% include note.html content='The mutable attributes are just counters and memory-operations only -
-the values might or might not not survive content node restarts.
+the values might or might not survive content node restarts.
 The values cannot be compared across nodes.
 Use the values to assess relative document matching and ranking performance since Vespa start' %}
 <p>
-  This example is based on the <a href="vespa-quick-start.html">quickstart</a>.
+  This example is based on the <a href="deploy-an-application-local.html">quickstart</a>.
   It uses 4 attributes that each track how many times a document participates in any of the 4 phases.
   This is tracked only if using rank-profile <code>rank_albums_track</code> in the query:
 </p>
@@ -471,7 +473,7 @@ $ vespa query \
 
 <h3 id="usage">Usage</h3>
 <p>
-  The framework is flexible in use, the normal use case is:
+  The framework is flexible in use; the normal use case is:
 </p>
 <ol>
   <li>
@@ -509,7 +511,7 @@ E.g. exclude monitoring queries / automation by using a separate ranking profile
 </p>
 <pre>
 field match_count type long {
-    indexing: 7 | to_long | attribute | summary   # Initialized to 7 for a new document. Default is 0.
+    indexing: 7 | to_long | attribute | summary   # Initialized to 7 for a new document. The default is 0.
     attribute: mutable
 }
 </pre>

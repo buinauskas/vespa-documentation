@@ -1,8 +1,6 @@
 ---
-# Copyright Vespa.ai. Licensed under the terms of the Apache 2.0 license. See LICENSE in the project root.
+# Copyright Vespa.ai. All rights reserved.
 title: "Linguistics in Vespa"
-redirect_from:
-- /documentation/linguistics.html
 ---
 
 <p>
@@ -77,8 +75,8 @@ width="810px" height="auto" />
     <li>Indonesian (id)</li>
     <li>Irish (ga)</li>
     <li>Italian (it)</li>
-    <li>Norwegian (nb)</li>
-    <li>Portugese (pt)</li>
+    <li>Norwegian (no)</li>
+    <li>Portuguese (pt)</li>
     <li>Romanian (ro)</li>
     <li>Russian (ru)</li>
     <li>Spanish (es)</li>
@@ -87,6 +85,20 @@ width="810px" height="auto" />
   </ul>
 
   <p>Other languages that will use a fallback to English <em>en</em>.</p>
+  <p>
+    The OpenNLP language detector gives a prediction with a
+    confidence; with confidence typically increasing with more
+    input. The threshold for using the prediction can be configured
+    with a number typically from 1.0 (wild guess) to 6.0 (confident
+    guess), with 2.0 as the default:
+<pre>
+  &lt;container id="..." version="1.0"&gt;
+    ...
+    &lt;config name="ai.vespa.opennlp.open-nlp"&gt;
+      &lt;detectConfidenceThreshold&gt;4.2&lt;/detectConfidenceThreshold&gt;
+    &lt;/config&gt;
+</pre>
+  </p>
 
   <p>English uses a simpler stemmer (kStem) by default, which produces fewer stems and therefore lower recall.
   To use OpenNlp stemming (Snowball) also for English add this config to your &lt;container&gt; element(s):
@@ -178,9 +190,7 @@ schema doc {
     document doc {
     ...
 </pre>
-
-<p>If the same document contains fields in multiple languages, set_language can be invoked multiple times, e.g</p>
-
+<p>If the same document contains fields in multiple languages, set_language can be invoked multiple times, e.g.:</p>
 <pre>
 schema doc {
     document doc {
@@ -315,7 +325,14 @@ Example:
 Using <em>weakAnd</em> here as example as that technique is already mentioned in #12154:
 </p>
 <pre>
-select * from sources * where rank(weakAnd(default contains equiv("machin", "machine"), default contains "learn)), default contains "machine", default contains "learning")
+select * from sources * where rank( 
+    default contains "machine", 
+    default contains "learning",
+    weakAnd(
+      default contains equiv("machin", "machine"), 
+      default contains "learn"
+    )
+)
 </pre>
 <p>
 We now retrieve using all possible stems/base forms with <em>weakAnd</em>,

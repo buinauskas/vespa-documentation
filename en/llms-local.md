@@ -1,8 +1,6 @@
 ---
-# Copyright Vespa.ai. Licensed under the terms of the Apache 2.0 license. See LICENSE in the project root.
+# Copyright Vespa.ai. All rights reserved.
 title: "Running LLMs inside your Vespa application"
-redirect_from:
-- /documentation/llms-local.html
 ---
 
 Please refer to [Large Language Models in Vespa](llms-in-vespa.html) for an
@@ -46,29 +44,28 @@ To set up the required inference engine for running your model, you need to
 define a `LocalLLM` component in your application's
 [services.xml](reference/services.html):
 
-```
+```xml
 <services version="1.0">
-  <container id="default" version="1.0">
+    <container id="default" version="1.0">
 
-    ...
+        ...
 
-    <component id="local" class="ai.vespa.llm.clients.LocalLLM">
-      <config name="ai.vespa.llm.clients.llm-local-client">
-          <model url="..." />
-      </config>
-    </component>
+        <component id="local" class="ai.vespa.llm.clients.LocalLLM">
+            <config name="ai.vespa.llm.clients.llm-local-client">
+                <model url="..." />
+            </config>
+        </component>
 
-    ...
+        ...
 
-  </container>
+    </container>
 </services>
 ```
 
 This component will ensure that the underlying inference engine is started and
 load the model when the container nodes are started. Each container node in the
-cluster will load the LLM. Note that you can set up [multiple clusters of
-container
-nodes](operations-selfhosted/routing.html#multiple-container-clusters).
+cluster will load the LLM. Note that you can set up 
+[multiple clusters of container nodes](operations-selfhosted/routing.html#multiple-container-clusters).
 This can be helpful for instance if you have multiple LLMs that don't fit in the
 available GPU memory, or you would like to offload LLM inference to dedicated
 nodes for performance reasons.
@@ -82,7 +79,6 @@ model types that can be used in Vespa.
 
 There are many other configuration parameters to customize how inference is run,
 please see the [configuration](#local-llm-configuration) section for more details.
-
 
 ### Valid LLM models
 
@@ -115,7 +111,6 @@ inference time can increase when using reduced precision, so be sure to
 benchmark your application accordingly, both in token generation performance
 but also in terms of output quality.
 
-
 ### Local LLM configuration
 
 LLM model inference has a number of configuration parameters that is set in
@@ -144,8 +139,17 @@ The most significant model configuration parameters are:
   default is the number of available cores - 2. Do not set this higher than the
   core count, as this will severely impact performance.
 - `maxTokens`: the maximum number of tokens that will be generated. Default is
-  512. Overridden by corresponding inference parameter.
-
+  512.
+- `maxPromptTokens`: the maximum number of tokens in the prompt. If the prompt
+  exceeds this number, it will be truncated. 
+  Default is -1, which means that the prompt will not be truncated.
+- `contextOverflowPolicy`: determines what to do when `contextSize` is too small 
+  to fit prompt and completion tokens for all parallel requests. 
+  The default is `NONE`, which allows new tokens to overwrite older ones. 
+  This may result in lower quality completions and performance issues.
+  `DISCARD` ignores the request silently, returning without generating any tokens.
+  `FAIL` raises and error.
+  
 Please refer to the [local LLM client configuration
 definition](https://github.com/vespa-engine/vespa/blob/master/model-integration/src/main/resources/configdefinitions/llm-local-client.def)
 for an updated list of configuration parameters.
@@ -218,12 +222,15 @@ with the query:
 - `topk` and `topp`: the probability of token sampling. Lower values tend to
   produce more coherent and focused text, while higher values introduce more
   diversity and creativity but potentially more errors or incoherence.
+- `jsonSchema`: JSON schema to use for structured output. 
+  Specifying this parameter also enables structured output.
+  See [structured output](llms-in-vespa.html#structured-output) for more details.
 
 The most significant here are `npredict` which will stop the token generation
 process after a certain number of tokens has been generated. Some models can
 for certain prompts enter a loop where an infinite number of tokens are
 generated.  This is clearly not beneficial situation, so this number should be
-set to a high enough value so all tokens for a response can be generated, but
+set to a high enough value, so all tokens for a response can be generated, but
 low enough to stop the model from generating tokens infinitely.
 
 
@@ -236,22 +243,22 @@ to offload the entire model to the GPU if it is available, but by using the
 `gpuLayers` parameter one can experiment with offloading parts of the model to
 GPU.
 
-```
+```xml
 <services version="1.0">
-  <container id="default" version="1.0">
+    <container id="default" version="1.0">
 
-    <!-- Sets up the inference on a mistral 7B model -->
-    <component id="local" class="ai.vespa.llm.clients.LocalLLM">
-      <config name="ai.vespa.llm.clients.llm-local-client">
-          <model url="url/to/mistral-7B-8bit" />
-          <parallelRequests>10</parallelRequests>
-          <contextSize>40960</contextSize>
-          <useGpu>true</useGpu> <!-- default is true -->
-          <gpuLayers>100</gpuLayers>
-      </config>
-    </component>
+        <!-- Sets up the inference on a mistral 7B model -->
+        <component id="local" class="ai.vespa.llm.clients.LocalLLM">
+            <config name="ai.vespa.llm.clients.llm-local-client">
+                <model url="url/to/mistral-7B-8bit" />
+                <parallelRequests>10</parallelRequests>
+                <contextSize>40960</contextSize>
+                <useGpu>true</useGpu> <!-- default is true -->
+                <gpuLayers>100</gpuLayers>
+            </config>
+        </component>
 
-  </container>
+    </container>
 </services>
 
 ```
@@ -261,7 +268,7 @@ model is too large to fit on the GPU, you can speed up model evaluation by
 offloading parts of the model to the GPU.
 
 To set up GPUs on self-hosted, please refer to [Container GPU
-setup](https://docs.vespa.ai/en/operations-selfhosted/vespa-gpu-container.html)
+setup](/en/operations-selfhosted/vespa-gpu-container.html)
 for more details.
 
 It is very easy to use GPU acceleration on Vespa Cloud. To enable GPU

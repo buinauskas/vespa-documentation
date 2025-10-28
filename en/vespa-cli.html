@@ -1,8 +1,7 @@
 ---
-# Copyright Vespa.ai. Licensed under the terms of the Apache 2.0 license. See LICENSE in the project root.
+# Copyright Vespa.ai. All rights reserved.
 title: "Vespa CLI"
 redirect_from:
-- /documentation/vespa-cli.html
 - /en/vespa-cli-feed.html
 ---
 
@@ -17,6 +16,7 @@ redirect_from:
   <li>Deploy your application in <a href="https://cloud.vespa.ai/">Vespa Cloud</a>
   <li>Feed and <a href="query-language.html#query-examples">query</a> documents</li>
   <li>Send custom requests with automatic authentication</li>
+  <li>Automate deployment operations with <a href="reference/vespa-cli/vespa_auth_api-key.html">vespa auth api-key</a></li>
 </ul>
 <p>Install Vespa CLI:</p>
 <ul>
@@ -25,7 +25,7 @@ redirect_from:
 </ul>
 <p>
   To learn the basics on how to use Vespa CLI, see
-  the <a href="vespa-quick-start.html">quick start guide</a> or the <a href="#cheat-sheet">cheat sheet
+  the <a href="deploy-an-application-local.html">quick start guide</a> or the <a href="#cheat-sheet">cheat sheet
   below</a>.
 </p>
 <p>
@@ -47,6 +47,9 @@ $ brew upgrade vespa-cli
 
 # Set home dir to a writeable directory - useful in some container contexts
 $ export VESPA_CLI_HOME=/tmp
+
+# export a token value for dataplane access
+$ export VESPA_CLI_DATA_PLANE_TOKEN='value-of-token'
 
 # Get help
 $ vespa document put --help
@@ -76,7 +79,10 @@ $ vespa config set --local application vespa-team.vespacloud-docsearch.other
 <pre>{% highlight shell %}
 # Deploy an application package from cwd
 $ vespa deploy
- 
+
+# Deploy to a specific zone
+$ vespa deploy -z dev.aws-us-east-1c
+
 # Get the deployed application package as a .zip-file
 $ vespa fetch
 
@@ -100,46 +106,48 @@ $ vespa destroy -a vespa-team.vespacloud-docsearch.other
 $ vespa document put file-with-one-doc.json
 
 # Put a document
-$ vespa document put id:mynamespace:music::a-head-full-of-dreams <(echo '
+$ vespa document put id:mynamespace:music::a-head-full-of-dreams --data '
 {
     "fields": {
         "album": "A Head Full of Dreams",
         "artist": "Coldplay"
     }
-}
-')
+}'
+
 
 # Put a document, ID in JSON
-$ vespa document put <(echo '
+$ vespa document put --data '
 {
     "put": "id:mynamespace:music::a-head-full-of-dreams",
     "fields": {
         "album": "A Head Full of Dreams",
         "artist": "Coldplay"
     }
-}
-')
+}'
 
 # Update a document
-$ vespa document update id:mynamespace:music::a-head-full-of-dreams <(echo '
+$ vespa document update id:mynamespace:music::a-head-full-of-dreams --data '
 {
     "fields": {
         "album": {
             "assign": "A Head Full of Thoughts"
         }
     }
-}
-')
+}'
 
-# Get a document
+# Get one or more documents
 $ vespa document get id:mynamespace:music::a-head-full-of-dreams
+$ vespa document get id:mynamespace:music::a-head-full-of-dreams id:mynamespace:music::when-we-all-fall-asleep-where-do-we-go
 
 # Delete a document
 $ vespa document remove id:mynamespace:music::a-head-full-of-dreams
 
-# Feed multiple documents or from stdin
+# Feed multiple documents or feed from stdin
 $ vespa feed *.jsonl
 $ cat docs.json | vespa feed -
+
+# Feed to Vespa Cloud
+$ vespa feed --application mytenant.myapp -target https://b123e1db.b68a1234.z.vespa-app.cloud feedfile.json
 
 # Print successful and failed operations:
 $ vespa feed --verbose docs.json
@@ -177,10 +185,14 @@ $ vespa visit --target http://localhost:8080 | vespa feed --target http://localh
     or one JSON operation per line (<a href="https://jsonlines.org/">JSONL</a>).</li>
   <li>The <a href="/en/reference/services-container.html#document-api">&lt;document-api&gt;</a>
     must be enabled in the container before documents can be fed or accessed -
-    see <a href="https://github.com/vespa-engine/sample-apps/blob/master/album-recommendation/services.xml">
+    see <a href="https://github.com/vespa-engine/sample-apps/blob/master/album-recommendation/app/services.xml">
       example</a>.</li>
-  <li>For automation, see example usage in a
-    <a href="https://github.com/vespa-engine/documentation/blob/master/.github/workflows/feed.yml">GitHub Action</a>.</li>
+  <li>
+    For automation, see example usage in a
+    <a href="https://github.com/vespa-engine/documentation/blob/master/.github/workflows/feed.yml">GitHub Action</a>.
+    This action uses security credentials in <code>VESPA_CLI_DATA_PLANE_CERT</code> and <code>VESPA_CLI_DATA_PLANE_KEY</code>
+    for easy security management in GitHub.
+  </li>
 </ul>
 
 
@@ -201,4 +213,15 @@ $ vespa query -v 'select * from music where album contains "head"' hits=5
 
 # Query a different port (after modifying http server port)
 $ vespa query 'select * from sources * where true' -t 'http://127.0.0.1:9080'
+
+# Use a query file - useful for large queries, e.g., when using query vectors
+$ vespa query --file queries-vector.json
+{% endhighlight %}</pre>
+<p>Example query file:</p>
+<pre>{% highlight json %}
+{
+    "yql": "select product_id, title from products where {targetHits: 200}nearestNeighbor(dense_embedding, q_vector)",
+    "input.query(q_vector)": [-0.050548091530799866, ... ,0.028366032987833023],
+    "ranking": "vector_distance"
+}
 {% endhighlight %}</pre>

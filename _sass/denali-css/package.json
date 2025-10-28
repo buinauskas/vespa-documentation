@@ -19,18 +19,18 @@
   },
   "devDependencies": {
     "@babel/core": "^7.11.6",
-    "@storybook/addon-actions": "^8.0.0",
+    "@storybook/addon-actions": "^9.0.0",
     "@storybook/addon-essentials": "^8.0.0",
-    "@storybook/addon-links": "^8.0.0",
-    "@storybook/html": "^8.0.0",
-    "babel-loader": "^9.0.0",
+    "@storybook/addon-links": "^9.0.0",
+    "@storybook/html": "^9.0.0",
+    "babel-loader": "^10.0.0",
     "browser-sync": "^3.0.2",
     "gulp": "^5.0.0",
     "gulp-connect-php": "^1.0.3",
     "gulp-rename": "^2.0.0",
-    "gulp-sass": "^5.1.0",
-    "mocha": "^10.1.0",
-    "react-is": "^18.0.0"
+    "gulp-sass": "^6.0.0",
+    "mocha": "^11.0.0",
+    "react-is": "^19.0.0"
   },
   "release": {
     "debug": false,
